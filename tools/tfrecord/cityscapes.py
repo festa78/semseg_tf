@@ -22,10 +22,12 @@ class CityscapesTFRecordWriter(BaseTFRecordWriter):
         # XXX: Need some assertions or tests.
         # Files properly exists test.
         self.options = options
-
         super().__init__({})
 
-    def _get_file_path(self):
+    def get_file_path(self):
+        """Cityscapes specific way to get file paths.
+        """
+        # XXX: Need test.
         for category in self.DATA_CATEGORY:
             image_list = glob(
                 os.path.join(self.options.input_dir, self.IMAGE_ROOT, category,
@@ -48,7 +50,7 @@ class CityscapesTFRecordWriter(BaseTFRecordWriter):
 
     def run(self):
         # Get {image, label} pair file path.
-        self._get_file_path()
+        self.get_file_path()
 
         # Write tfrecord file.
         self._write_tfrecord()
@@ -71,6 +73,7 @@ if __name__ == '__main__':
         default='./',
         help='Path to directory to save the created .tfrecord data.')
     options = parser.parse_args()
+    print(type(options))
 
     writer = CityscapesTFRecordWriter(options)
     writer.run()
