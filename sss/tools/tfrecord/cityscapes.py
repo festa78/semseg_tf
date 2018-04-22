@@ -1,6 +1,3 @@
-#!/usr/bin/python3 -B
-
-import argparse
 import os
 
 import glob
@@ -8,7 +5,7 @@ import tensorflow as tf
 
 import project_root
 
-import tools.tfrecord.base as base
+import sss.tools.tfrecord.base as base
 
 
 class CityscapesTFRecordWriter(base.BaseTFRecordWriter):
@@ -20,11 +17,11 @@ class CityscapesTFRecordWriter(base.BaseTFRecordWriter):
     LABEL_SURFIX = '_labelIds.png'
     DATA_CATEGORY = ['train', 'val', 'test']
 
-    def __init__(self, options):
+    def __init__(self, input_dir, output_dir):
+        super().__init__(data_list={})
         # XXX: Need some assertions to check that input files properly exists.
-        self.input_dir = os.path.abspath(os.path.expanduser(options.input_dir))
-        self.output_dir = os.path.abspath(os.path.expanduser(options.output_dir))
-        super().__init__()
+        self.input_dir = os.path.abspath(os.path.expanduser(input_dir))
+        self.output_dir = os.path.abspath(os.path.expanduser(output_dir))
 
     def get_file_path(self):
         """Cityscapes specific way to get file paths.
@@ -57,21 +54,10 @@ class CityscapesTFRecordWriter(base.BaseTFRecordWriter):
         self._write_tfrecord(self.output_dir)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description="Make TFRecord datasets from {image, label} pair file paths."
-    )
-    parser.add_argument(
-        'input_dir',
-        type=str,
-        help=
-        'Path to the cityscapes data directory. The directory structure is assumed to be default.'
-    )
-    parser.add_argument(
-        'output_dir',
-        type=str,
-        help='Path to directory to save the created .tfrecord data.')
-    options = parser.parse_args()
+class CityscapesTFRecordReader(base.BaseTFRecordReader):
+    """Read cityscapes datasets from tfrecord files.
+    TODO: add cityscapes specific stuffs.
+    """
+    def __init__(self, file_path, sess):
+        super().__init__(file_path, sess)
 
-    writer = CityscapesTFRecordWriter(options)
-    writer.run()
