@@ -11,7 +11,8 @@ import tensorflow as tf
 
 import project_root
 
-from sss.tools.tfrecord.cityscapes import CityscapesTFRecordWriter, CityscapesTFRecordReader
+from sss.data.tfrecord.base import BaseTFRecordReader
+from sss.data.tfrecord.cityscapes import CityscapesTFRecordWriter
 
 
 def _create_sample_cityscapes_structure(tmpdir):
@@ -99,7 +100,7 @@ def test_read_tfrecord(tmpdir):
                        tf.local_variables_initializer())
     with tf.Session() as sess:
         for category in DATA_CATEGORY:
-            dut = CityscapesTFRecordReader(os.path.join(output_dir, category + '.tfrecord'), sess)
+            dut = BaseTFRecordReader(os.path.join(output_dir, category + '.tfrecord'), sess)
             # The op for initializing the variables.
             sess.run(init_op)
             for i, (image, label, filename) in enumerate(dut):

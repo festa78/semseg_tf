@@ -5,10 +5,10 @@ import tensorflow as tf
 
 import project_root
 
-import sss.tools.tfrecord.base as base
+from sss.data.tfrecord.base import BaseTFRecordWriter
 
 
-class CityscapesTFRecordWriter(base.BaseTFRecordWriter):
+class CityscapesTFRecordWriter(BaseTFRecordWriter):
     """Make TFRecord datasets from row Cityscapes data.
     """
     # Constants.
@@ -52,12 +52,3 @@ class CityscapesTFRecordWriter(base.BaseTFRecordWriter):
 
         # Write tfrecord file.
         self._write_tfrecord(self.output_dir)
-
-
-class CityscapesTFRecordReader(base.BaseTFRecordReader):
-    """Read cityscapes datasets from tfrecord files.
-    TODO: add cityscapes specific stuffs.
-    """
-    def __init__(self, file_path, sess):
-        super().__init__(file_path, sess)
-

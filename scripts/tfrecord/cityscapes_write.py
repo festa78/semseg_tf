@@ -4,7 +4,7 @@ import argparse
 
 import project_root
 
-from sss.tools.tfrecord.cityscapes import CityscapesTFRecordWriter
+from sss.data.tfrecord.cityscapes import CityscapesTFRecordWriter
 
 
 if __name__ == '__main__':
