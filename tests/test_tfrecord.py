@@ -1,12 +1,10 @@
 """Test set for TFRecord wrapper classes.
 """
 
-import argparse
 import os
 
 from PIL import Image
 import numpy as np
-import pytest
 import tensorflow as tf
 
 import project_root
