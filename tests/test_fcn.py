@@ -114,8 +114,8 @@ def test_fcn_update():
     MODES = ('fcn32', 'fcn16', 'fcn8')
 
     for mode in MODES:
-        with tf.device("/gpu:0"):
-            with tf.Graph().as_default():
+        with tf.Graph().as_default():
+            with tf.device("/gpu:0"):
                 dut = FCN(NUM_CLASSES, mode=mode)
                 dummy_in = tf.placeholder(tf.float32,
                                           (None, IMAGE_SIZE, IMAGE_SIZE, 3))
@@ -130,16 +130,17 @@ def test_fcn_update():
                 grads = optimizer.compute_gradients(
                     loss, var_list=tf.trainable_variables())
                 train_op = optimizer.apply_gradients(grads)
-                with tf.Session() as sess:
-                    sess.run(tf.global_variables_initializer())
-                    before = sess.run(tf.trainable_variables())
-                    sess.run(
-                        train_op,
-                        feed_dict={
-                            dummy_in: np.ones((1, IMAGE_SIZE, IMAGE_SIZE, 3)),
-                            dummy_gt: np.ones((1, IMAGE_SIZE, IMAGE_SIZE, 1)),
-                        })
-                    after = sess.run(tf.trainable_variables())
-                    for b, a in zip(before, after):
-                        # Make sure something changed.
-                        assert (b != a).any()
+
+            with tf.Session() as sess:
+                sess.run(tf.global_variables_initializer())
+                before = sess.run(tf.trainable_variables())
+                sess.run(
+                    train_op,
+                    feed_dict={
+                        dummy_in: np.ones((1, IMAGE_SIZE, IMAGE_SIZE, 3)),
+                        dummy_gt: np.ones((1, IMAGE_SIZE, IMAGE_SIZE, 1)),
+                    })
+                after = sess.run(tf.trainable_variables())
+                for b, a in zip(before, after):
+                    # Make sure something changed.
+                    assert (b != a).any()
