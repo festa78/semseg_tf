@@ -75,7 +75,7 @@ def test_cityscapes_get_file_path(tmpdir):
     dut.get_file_path()
     for cat1, cat2 in zip(dut.data_list.values(), gt_data_list.values()):
         for list1, list2 in zip(cat1.values(), cat2.values()):
-            # Not care about orders.
+            # Do not care about orders.
             assert set(list1) == set(list2)
 
 
@@ -96,11 +96,19 @@ def test_read_tfrecord(tmpdir):
     # Read the created tfrecord file.
     init_op = tf.group(tf.global_variables_initializer(),
                        tf.local_variables_initializer())
-    with tf.Session() as sess:
-        for category in DATA_CATEGORY:
-            dut = BaseTFRecordReader(os.path.join(output_dir, category + '.tfrecord'), sess)
+    for category in DATA_CATEGORY:
+        dut = BaseTFRecordReader(os.path.join(output_dir, category + '.tfrecord'))
+        next_element = dut.get_next()
+        with tf.Session() as sess:
             # The op for initializing the variables.
             sess.run(init_op)
-            for i, (image, label, filename) in enumerate(dut):
-                gt_image = np.array(Image.open(open(filename, 'rb')).convert('RGB'))
-                assert np.all(np.equal(image, gt_image))
+            i = 0
+            while True:
+                try:
+                    image, label, filename = sess.run(next_element)
+                    gt_image = np.array(Image.open(open(filename.decode(), 'rb')).convert('RGB'))
+                    assert np.array_equal(image, gt_image)
+                    i += 1
+                except tf.errors.OutOfRangeError:
+                    assert i == 4
+                    break

@@ -47,10 +47,9 @@ class BaseTFRecordReader:
     """Base class to read .tfrecord file for semantic segmentation.
     This class works as an iterator.
     """
-    def __init__(self, file_path, sess):
+    def __init__(self, file_path):
         self.logger = logging.getLogger(__name__)
         self.file_path = file_path
-        self.sess = sess
         self.dataset = tf.data.TFRecordDataset(self.file_path)
         self.dataset = self.dataset.map(self._parse_bytes_sample)
 
@@ -83,14 +82,6 @@ class BaseTFRecordReader:
 
         return image, label, filename
 
-    def __iter__(self):
+    def get_next(self):
         iterator = self.dataset.make_one_shot_iterator()
-        self.next_element = iterator.get_next()
-        return self
-
-    def __next__(self):
-        try:
-            image, label, filename = self.sess.run(self.next_element)
-            return image, label, filename.decode()
-        except tf.errors.OutOfRangeError:
-            raise StopIteration
+        return iterator.get_next()
