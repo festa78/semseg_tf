@@ -5,10 +5,10 @@ import tensorflow as tf
 
 import project_root
 
-from sss.data.tfrecord.base import BaseTFRecordWriter
+from sss.data.tfrecord import TFRecordWriter
 
 
-class CityscapesTFRecordWriter(BaseTFRecordWriter):
+class CityscapesTFRecordWriter(TFRecordWriter):
     """Make TFRecord datasets from row Cityscapes data.
     """
     # Constants.
@@ -28,17 +28,17 @@ class CityscapesTFRecordWriter(BaseTFRecordWriter):
         """
         for category in self.DATA_CATEGORY:
             image_list = glob.glob(
-                os.path.join(self.input_dir, self.IMAGE_ROOT, category,
-                             '*/*'))
+                os.path.join(self.input_dir, self.IMAGE_ROOT, category, '*/*'))
 
             # Get label path corresponds to each image path.
             label_list = []
             for f in image_list:
-                root_path = os.path.join(self.input_dir,
-                                         self.LABEL_ROOT, category)
+                root_path = os.path.join(self.input_dir, self.LABEL_ROOT,
+                                         category)
                 area_name = f.split('/')[-2]
                 base_name = os.path.basename(f).replace(
-                    self.IMAGE_ROOT, self.LABEL_ROOT).replace('.png', self.LABEL_SURFIX)
+                    self.IMAGE_ROOT, self.LABEL_ROOT).replace(
+                        '.png', self.LABEL_SURFIX)
                 label_list.append(os.path.join(root_path, area_name, base_name))
 
             self.data_list[category] = {

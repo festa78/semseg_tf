@@ -9,8 +9,8 @@ import tensorflow as tf
 
 import project_root
 
-from sss.data.tfrecord.base import BaseTFRecordReader
-from sss.data.tfrecord.cityscapes import CityscapesTFRecordWriter
+from sss.data.tfrecord import TFRecordReader
+from sss.data.cityscapes import CityscapesTFRecordWriter
 
 
 def _create_sample_cityscapes_structure(tmpdir):
@@ -46,7 +46,8 @@ def _create_sample_cityscapes_structure(tmpdir):
                     # Creates empty files.
                     if root == ROOTS[0]:
                         path = tmpdir.join(root, cat, sub, filename + '.png')
-                        image = np.random.randint(255, size=(IMAGE_WIDTH, IMAGE_HEIGHT, 3))
+                        image = np.random.randint(
+                            255, size=(IMAGE_WIDTH, IMAGE_HEIGHT, 3))
                         image = Image.fromarray(image.astype(np.uint8))
                         # Convert path from py.path.local to str.
                         image.save(str(path))
@@ -54,7 +55,8 @@ def _create_sample_cityscapes_structure(tmpdir):
                     else:
                         path = tmpdir.join(root, cat, sub,
                                            filename + '_labelIds.png')
-                        label = np.random.randint(10, size=(IMAGE_WIDTH, IMAGE_HEIGHT))
+                        label = np.random.randint(
+                            10, size=(IMAGE_WIDTH, IMAGE_HEIGHT))
                         label = Image.fromarray(label.astype(np.uint8))
                         # Convert path from py.path.local to str.
                         label.save(str(path))
@@ -67,8 +69,7 @@ def _create_sample_cityscapes_structure(tmpdir):
 def test_cityscapes_get_file_path(tmpdir):
     """Test it can get file paths from cityscapes like data structure.
     """
-    input_dir, gt_data_list = _create_sample_cityscapes_structure(
-        tmpdir)
+    input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
     output_dir = input_dir
     writer = CityscapesTFRecordWriter(input_dir, output_dir)
     dut = CityscapesTFRecordWriter(input_dir, output_dir)
@@ -86,8 +87,7 @@ def test_read_tfrecord(tmpdir):
     DATA_CATEGORY = ['train', 'val', 'test']
 
     # Make a dummy tfrecord file.
-    input_dir, gt_data_list = _create_sample_cityscapes_structure(
-        tmpdir)
+    input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
     # Convert from py.path.local to str.
     output_dir = input_dir
     writer = CityscapesTFRecordWriter(input_dir, output_dir)
@@ -97,7 +97,7 @@ def test_read_tfrecord(tmpdir):
     init_op = tf.group(tf.global_variables_initializer(),
                        tf.local_variables_initializer())
     for category in DATA_CATEGORY:
-        dut = BaseTFRecordReader(os.path.join(output_dir, category + '.tfrecord'))
+        dut = TFRecordReader(os.path.join(output_dir, category + '.tfrecord'))
         next_element = dut.get_next()
         with tf.Session() as sess:
             # The op for initializing the variables.
@@ -106,7 +106,9 @@ def test_read_tfrecord(tmpdir):
             while True:
                 try:
                     image, label, filename = sess.run(next_element)
-                    gt_image = np.array(Image.open(open(filename.decode(), 'rb')).convert('RGB'))
+                    gt_image = np.array(
+                        Image.open(open(filename.decode(),
+                                        'rb')).convert('RGB'))
                     assert np.array_equal(image, gt_image)
                     i += 1
                 except tf.errors.OutOfRangeError:

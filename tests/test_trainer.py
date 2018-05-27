@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from sss.models.fcn import FCN
+from sss.models.fcn import fcn32
 from sss.pipelines.trainer import Trainer
 from sss.utils.losses import cross_entropy
 
@@ -15,6 +15,7 @@ def test_trainer_update():
 
     with tf.Graph().as_default():
         with tf.device('/cpu:0'):
+            global_step = tf.Variable(0, name='global_step', trainable=False)
             dummy_images = tf.data.Dataset.from_tensor_slices(
                 tf.convert_to_tensor(
                     np.ones([4, IMAGE_SIZE, IMAGE_SIZE, 3]), dtype=tf.float32))
@@ -23,17 +24,18 @@ def test_trainer_update():
                     np.ones([4, IMAGE_SIZE, IMAGE_SIZE, 1]), dtype=tf.int64))
             dummy_files = tf.data.Dataset.from_tensor_slices(
                 tf.convert_to_tensor(('1', '2', '3', '4'), dtype=tf.string))
-            dataset = tf.data.Dataset.zip((dummy_images, dummy_labels, dummy_files))
+            dataset = tf.data.Dataset.zip((dummy_images, dummy_labels,
+                                           dummy_files))
             dataset = dataset.batch(2)
             iterator = dataset.make_one_shot_iterator()
 
         with tf.device('/gpu:0'):
             batch = iterator.get_next()
-            model = FCN(NUM_CLASSES)
+            model = fcn32(NUM_CLASSES)
 
             optimizer = tf.train.AdamOptimizer()
 
-            dut = Trainer(model, batch, cross_entropy, optimizer)
+            dut = Trainer(model, batch, cross_entropy, optimizer, global_step)
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -42,7 +44,9 @@ def test_trainer_update():
             dut.train(sess)
 
             after = sess.run(tf.trainable_variables())
+            step = tf.train.global_step(sess, global_step)
 
+    assert step == 2
     for b, a in zip(before, after):
         # Make sure something changed.
         assert (b != a).any()

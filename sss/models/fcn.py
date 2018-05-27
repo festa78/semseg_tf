@@ -255,3 +255,15 @@ class FCN:
             out = self.upscore32(out, tf.shape(x))
 
         return out
+
+
+def fcn32(num_classes, vgg_pretrain_ckpt_path=None):
+    return FCN(num_classes, 'fcn32', vgg_pretrain_ckpt_path)
+
+
+def fcn16(num_classes, vgg_pretrain_ckpt_path=None):
+    return FCN(num_classes, 'fcn16', vgg_pretrain_ckpt_path)
+
+
+def fcn8(num_classes, vgg_pretrain_ckpt_path=None):
+    return FCN(num_classes, 'fcn8', vgg_pretrain_ckpt_path)

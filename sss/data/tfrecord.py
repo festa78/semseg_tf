@@ -9,8 +9,8 @@ import tensorflow as tf
 import tqdm
 
 
-class BaseTFRecordWriter:
-    """Base class to write .tfrecord file for semantic segmentation.
+class TFRecordWriter:
+    """Basic class to write .tfrecord file for semantic segmentation.
     """
 
     def __init__(self, data_list):
@@ -20,11 +20,13 @@ class BaseTFRecordWriter:
     def _write_tfrecord(self, output_dir):
         for data_category in self.data_list.keys():
             filename = os.path.join(output_dir, data_category + '.tfrecord')
-            self.logger.info('Start writing {} data to {}'.format(data_category, filename))
+            self.logger.info('Start writing {} data to {}'.format(
+                data_category, filename))
             with tf.python_io.TFRecordWriter(filename) as writer:
-                for image_path, label_path in tqdm.tqdm(zip(self.data_list[data_category]['image_list'],
-                                                            self.data_list[data_category]['label_list']),
-                                                        total=len(self.data_list[data_category]['image_list'])):
+                for image_path, label_path in tqdm.tqdm(
+                        zip(self.data_list[data_category]['image_list'],
+                            self.data_list[data_category]['label_list']),
+                        total=len(self.data_list[data_category]['image_list'])):
                     # filename = os.path.basename(image_path)
                     filename = image_path
                     image = np.array(Image.open(image_path))
@@ -33,20 +35,38 @@ class BaseTFRecordWriter:
                     width = image.shape[1]
                     image_raw = image.tostring()
                     label_raw = label.tostring()
-                    example = tf.train.Example(features=tf.train.Features(feature={
-                        'height': tf.train.Feature(int64_list=tf.train.Int64List(value=[height])),
-                        'width': tf.train.Feature(int64_list=tf.train.Int64List(value=[width])),
-                        'image_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_raw])),
-                        'label_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_raw])),
-                        'filename': tf.train.Feature(bytes_list=tf.train.BytesList(value=[str.encode(filename)]))
-                    }))
+                    example = tf.train.Example(
+                        features=tf.train.Features(
+                            feature={
+                                'height':
+                                tf.train.Feature(
+                                    int64_list=tf.train.Int64List(
+                                        value=[height])),
+                                'width':
+                                tf.train.Feature(
+                                    int64_list=tf.train.Int64List(
+                                        value=[width])),
+                                'image_raw':
+                                tf.train.Feature(
+                                    bytes_list=tf.train.BytesList(
+                                        value=[image_raw])),
+                                'label_raw':
+                                tf.train.Feature(
+                                    bytes_list=tf.train.BytesList(
+                                        value=[label_raw])),
+                                'filename':
+                                tf.train.Feature(
+                                    bytes_list=tf.train.BytesList(
+                                        value=[str.encode(filename)]))
+                            }))
                     writer.write(example.SerializeToString())
 
 
-class BaseTFRecordReader:
-    """Base class to read .tfrecord file for semantic segmentation.
+class TFRecordReader:
+    """Basic class to read .tfrecord file for semantic segmentation.
     This class works as an iterator.
     """
+
     def __init__(self, file_path):
         self.logger = logging.getLogger(__name__)
         self.file_path = file_path
@@ -64,7 +84,7 @@ class BaseTFRecordReader:
                 'image_raw': tf.FixedLenFeature([], tf.string),
                 'label_raw': tf.FixedLenFeature([], tf.string),
                 'filename': tf.FixedLenFeature([], tf.string)
-        })
+            })
 
         filename = features['filename']
 

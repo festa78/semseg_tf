@@ -4,8 +4,7 @@ import argparse
 
 import project_root
 
-from sss.data.tfrecord.cityscapes import CityscapesTFRecordWriter
-
+from sss.data.cityscapes import CityscapesTFRecordWriter
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

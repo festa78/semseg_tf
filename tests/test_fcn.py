@@ -6,7 +6,8 @@ import tensorflow as tf
 
 import project_root
 
-from sss.models.fcn import FCN
+from sss.models.fcn import fcn32, fcn16, fcn8
+from sss.utils.losses import cross_entropy
 
 
 def test_fcn_init():
@@ -17,7 +18,7 @@ def test_fcn_init():
 
     with tf.Graph().as_default():
         # Check methods constructed in __init__().
-        dut = FCN(NUM_CLASSES)
+        dut = fcn32(NUM_CLASSES)
         assert dut.logger is not None
         assert dut.num_classes == NUM_CLASSES
         assert dut.vgg_pretrain_ckpt_path is None
@@ -50,20 +51,20 @@ def test_fcn_init():
         assert not hasattr(dut, 'upscore4')
         assert not hasattr(dut, 'score_pool3')
 
-        dut = FCN(NUM_CLASSES, mode='fcn16')
+        dut = fcn16(NUM_CLASSES)
         assert hasattr(dut, 'upscore2')
         assert hasattr(dut, 'score_pool4')
         assert not hasattr(dut, 'upscore4')
         assert not hasattr(dut, 'score_pool3')
 
-        dut = FCN(NUM_CLASSES, mode='fcn8')
+        dut = fcn8(NUM_CLASSES)
         assert hasattr(dut, 'upscore2')
         assert hasattr(dut, 'score_pool4')
         assert hasattr(dut, 'upscore4')
         assert hasattr(dut, 'score_pool3')
 
         # checkpoint path specified.
-        dut = FCN(NUM_CLASSES, vgg_pretrain_ckpt_path=CKPT_PATH)
+        dut = fcn32(NUM_CLASSES, vgg_pretrain_ckpt_path=CKPT_PATH)
         assert dut.vgg_pretrain_ckpt_path == CKPT_PATH
 
 
@@ -71,7 +72,6 @@ def test_fcn_architecture():
     """Test the architecture of FCN.
     """
     IMAGE_SIZE = 224
-    MODE = 'fcn8'
     NUM_CLASSES = 5
     GT_VAR_LIST = sorted([
         "fcn/conv1/conv1_1/weights:0", "fcn/conv1/conv1_1/biases:0",
@@ -96,7 +96,7 @@ def test_fcn_architecture():
     ])
 
     with tf.Graph().as_default():
-        dut = FCN(NUM_CLASSES, mode=MODE)
+        dut = fcn8(NUM_CLASSES)
         dummy_in = tf.placeholder(tf.float32, (None, IMAGE_SIZE, IMAGE_SIZE, 3))
         dut.forward(dummy_in)
         var_list = tf.get_collection(key=tf.GraphKeys.TRAINABLE_VARIABLES)
@@ -111,21 +111,24 @@ def test_fcn_update():
     """
     IMAGE_SIZE = 224
     NUM_CLASSES = 5
-    MODES = ('fcn32', 'fcn16', 'fcn8')
+    MODELS = (fcn32, fcn16, fcn8)
 
-    for mode in MODES:
+    for model in MODELS:
         with tf.Graph().as_default():
-            with tf.device("/gpu:0"):
-                dut = FCN(NUM_CLASSES, mode=mode)
+            with tf.device("/cpu:0"):
                 dummy_in = tf.placeholder(tf.float32,
                                           (None, IMAGE_SIZE, IMAGE_SIZE, 3))
                 dummy_gt = tf.placeholder(
                     tf.int32, shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1])
+
+            with tf.device("/gpu:0"):
+                dut = model(NUM_CLASSES)
                 out = dut.forward(dummy_in)
-                loss = tf.reduce_mean(
-                    tf.nn.sparse_softmax_cross_entropy_with_logits(
-                        logits=out,
-                        labels=tf.squeeze(dummy_gt, squeeze_dims=[3])))
+
+            with tf.device("/cpu:0"):
+                loss = cross_entropy(out, dummy_gt)
+
+            with tf.device("/gpu:0"):
                 optimizer = tf.train.AdamOptimizer()
                 grads = optimizer.compute_gradients(
                     loss, var_list=tf.trainable_variables())
