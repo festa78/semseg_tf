@@ -21,7 +21,6 @@ def test_fcn_init():
         dut = fcn32(NUM_CLASSES)
         assert dut.logger is not None
         assert dut.num_classes == NUM_CLASSES
-        assert dut.vgg_pretrain_ckpt_path is None
         assert hasattr(dut, 'conv1_1')
         assert hasattr(dut, 'conv1_2')
         assert hasattr(dut, 'pool1')
@@ -62,10 +61,6 @@ def test_fcn_init():
         assert hasattr(dut, 'score_pool4')
         assert hasattr(dut, 'upscore4')
         assert hasattr(dut, 'score_pool3')
-
-        # checkpoint path specified.
-        dut = fcn32(NUM_CLASSES, vgg_pretrain_ckpt_path=CKPT_PATH)
-        assert dut.vgg_pretrain_ckpt_path == CKPT_PATH
 
 
 def test_fcn_architecture():
@@ -126,7 +121,7 @@ def test_fcn_update():
                 out = dut.forward(dummy_in)
 
             with tf.device("/cpu:0"):
-                loss = cross_entropy(out, dummy_gt)
+                loss = cross_entropy(out, dummy_gt, 1.)
 
             with tf.device("/gpu:0"):
                 optimizer = tf.train.AdamOptimizer()

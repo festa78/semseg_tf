@@ -9,8 +9,8 @@ import tensorflow as tf
 
 import project_root
 
-from sss.data.tfrecord import TFRecordReader
-from sss.data.cityscapes import CityscapesTFRecordWriter
+from sss.data.tfrecord import read_tfrecord, write_tfrecord
+from sss.data.cityscapes import get_cityscapes_file_path
 
 
 def _create_sample_cityscapes_structure(tmpdir):
@@ -71,45 +71,45 @@ def test_cityscapes_get_file_path(tmpdir):
     """
     input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
     output_dir = input_dir
-    writer = CityscapesTFRecordWriter(input_dir, output_dir)
-    dut = CityscapesTFRecordWriter(input_dir, output_dir)
-    dut.get_file_path()
-    for cat1, cat2 in zip(dut.data_list.values(), gt_data_list.values()):
+    data_list = get_cityscapes_file_path(input_dir)
+    for cat1, cat2 in zip(data_list.values(), gt_data_list.values()):
         for list1, list2 in zip(cat1.values(), cat2.values()):
             # Do not care about orders.
             assert set(list1) == set(list2)
 
 
-def test_read_tfrecord(tmpdir):
-    """Test it can read the tfrecord file correctly.
+def test_write_read_tfrecord(tmpdir):
+    """Test it can write and read the tfrecord file correctly.
     """
     # Constants.
     DATA_CATEGORY = ['train', 'val', 'test']
 
     # Make a dummy tfrecord file.
     input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
-    # Convert from py.path.local to str.
     output_dir = input_dir
-    writer = CityscapesTFRecordWriter(input_dir, output_dir)
-    writer.run()
+    # Convert from py.path.local to str.
+    data_list = get_cityscapes_file_path(input_dir)
+    write_tfrecord(data_list, output_dir)
 
     # Read the created tfrecord file.
     init_op = tf.group(tf.global_variables_initializer(),
                        tf.local_variables_initializer())
     for category in DATA_CATEGORY:
-        dut = TFRecordReader(os.path.join(output_dir, category + '.tfrecord'))
-        next_element = dut.get_next()
+        # dut = TFRecordReader(os.path.join(output_dir, category + '.tfrecord'))
+        dataset = read_tfrecord(
+            os.path.join(output_dir, category + '.tfrecord'))
+        next_element = dataset.make_one_shot_iterator().get_next()
         with tf.Session() as sess:
             # The op for initializing the variables.
             sess.run(init_op)
             i = 0
             while True:
                 try:
-                    image, label, filename = sess.run(next_element)
+                    sample = sess.run(next_element)
                     gt_image = np.array(
-                        Image.open(open(filename.decode(),
+                        Image.open(open(sample['filename'].decode(),
                                         'rb')).convert('RGB'))
-                    assert np.array_equal(image, gt_image)
+                    assert np.array_equal(sample['image'], gt_image)
                     i += 1
                 except tf.errors.OutOfRangeError:
                     assert i == 4

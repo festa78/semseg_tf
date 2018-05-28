@@ -9,15 +9,21 @@ import tensorflow as tf
 class FCN:
     """Fully convolutional network (FCN) implementation.
     cf. https://arxiv.org/abs/1411.4038
+
+    Parameters
+    ----------
+    num_classes: int
+        The number of output classes.
+    mode: str
+        Which model architecture to use from fcn32, fcn16, and fcn8.
     """
     MODES = ('fcn32', 'fcn16', 'fcn8')
 
-    def __init__(self, num_classes, mode='fcn32', vgg_pretrain_ckpt_path=None):
+    def __init__(self, num_classes, mode='fcn32'):
         assert mode in self.MODES
         self.logger = logging.getLogger(__name__)
         self.num_classes = num_classes
         self.mode = mode
-        self.vgg_pretrain_ckpt_path = vgg_pretrain_ckpt_path
         self.outsizes = OrderedDict()
 
         # Prepare layers.
@@ -187,12 +193,16 @@ class FCN:
 
         return upscore
 
-    def restore_vgg_weights(self, sess):
-        if self.vgg_pretrain_ckpt_path is None:
-            self.logger.info(
-                'vgg ckpt path is not specified. Will not restore.')
-            return
-
+    @staticmethod
+    def restore_vgg_weights(sess, vgg_pretrain_ckpt_path):
+        """Restore pretrained vgg weights.
+        Parameters
+        ----------
+        sess: tf.Session()
+            The current session.
+        vgg_pretrain_ckpy_path: str
+            The path to the VGG weights ckpt file.
+        """
         # Make the dictionary to correspond variables between fcn and vgg.
         var_list = {}
         var_list_fcn = tf.get_collection(
@@ -201,10 +211,20 @@ class FCN:
             if 'score' not in var.name:
                 var_list[var.name.replace('fcn', 'vgg_16')[:-2]] = var
         vgg_saver = tf.train.Saver(var_list=var_list)
-        vgg_saver.restore(sess, self.vgg_pretrain_ckpt_path)
-        self.logger.info('restored vgg weights.')
+        vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
 
     def forward(self, x):
+        """Forward the input tensor through the network.
+        Parameters
+        ----------
+        x: (N, H, W, C) tf.Tensor
+            Input tensor to process.
+
+        Returns
+        -------
+        out: (N, H, W, C) tf.Tensor
+            The output tensor of the network.
+        """
         with tf.variable_scope('fcn'):
             out = self.conv1_1(x)
             out = self.conv1_2(out)
@@ -257,13 +277,13 @@ class FCN:
         return out
 
 
-def fcn32(num_classes, vgg_pretrain_ckpt_path=None):
-    return FCN(num_classes, 'fcn32', vgg_pretrain_ckpt_path)
+def fcn32(num_classes):
+    return FCN(num_classes, 'fcn32')
 
 
-def fcn16(num_classes, vgg_pretrain_ckpt_path=None):
-    return FCN(num_classes, 'fcn16', vgg_pretrain_ckpt_path)
+def fcn16(num_classes):
+    return FCN(num_classes, 'fcn16')
 
 
-def fcn8(num_classes, vgg_pretrain_ckpt_path=None):
-    return FCN(num_classes, 'fcn8', vgg_pretrain_ckpt_path)
+def fcn8(num_classes):
+    return FCN(num_classes, 'fcn8')

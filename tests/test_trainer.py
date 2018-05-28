@@ -15,22 +15,23 @@ def test_trainer_update():
 
     with tf.Graph().as_default():
         with tf.device('/cpu:0'):
-            global_step = tf.Variable(0, name='global_step', trainable=False)
-            dummy_images = tf.data.Dataset.from_tensor_slices(
+            dummy_batch = {
+                'image':
                 tf.convert_to_tensor(
-                    np.ones([4, IMAGE_SIZE, IMAGE_SIZE, 3]), dtype=tf.float32))
-            dummy_labels = tf.data.Dataset.from_tensor_slices(
+                    np.ones([4, IMAGE_SIZE, IMAGE_SIZE, 3]), dtype=tf.float32),
+                'label':
                 tf.convert_to_tensor(
-                    np.ones([4, IMAGE_SIZE, IMAGE_SIZE, 1]), dtype=tf.int64))
-            dummy_files = tf.data.Dataset.from_tensor_slices(
-                tf.convert_to_tensor(('1', '2', '3', '4'), dtype=tf.string))
-            dataset = tf.data.Dataset.zip((dummy_images, dummy_labels,
-                                           dummy_files))
+                    np.ones([4, IMAGE_SIZE, IMAGE_SIZE, 1]), dtype=tf.int64),
+                'filename':
+                tf.convert_to_tensor(('1', '2', '3', '4'), dtype=tf.string)
+            }
+            dataset = tf.data.Dataset.from_tensor_slices(dummy_batch)
             dataset = dataset.batch(2)
             iterator = dataset.make_one_shot_iterator()
+            batch = iterator.get_next()
+            global_step = tf.Variable(0, name='global_step', trainable=False)
 
         with tf.device('/gpu:0'):
-            batch = iterator.get_next()
             model = fcn32(NUM_CLASSES)
 
             optimizer = tf.train.AdamOptimizer()
