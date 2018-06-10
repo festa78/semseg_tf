@@ -1,16 +1,11 @@
-"""Test set for TFRecord wrapper classes.
+"""Test set for cityscapes classes.
 """
-
-import os
 
 from PIL import Image
 import numpy as np
 import tensorflow as tf
 
-import project_root
-
-from sss.data.tfrecord import read_tfrecord, write_tfrecord
-from sss.data.cityscapes import get_cityscapes_file_path
+from sss.data.cityscapes import get_cityscapes_file_path, id2trainid_tensor, trainid2color_tensor
 
 
 def _create_sample_cityscapes_structure(tmpdir):
@@ -66,39 +61,51 @@ def _create_sample_cityscapes_structure(tmpdir):
     return root_dir_path, data_list
 
 
-def test_write_read_tfrecord(tmpdir):
-    """Test it can write and read the tfrecord file correctly.
+def test_cityscapes_get_file_path(tmpdir):
+    """Test it can get file paths from cityscapes like data structure.
     """
-    # Constants.
-    DATA_CATEGORY = ['train', 'val', 'test']
-
-    # Make a dummy tfrecord file.
-    # XXX use more simple structure.
     input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
     output_dir = input_dir
-    # Convert from py.path.local to str.
     data_list = get_cityscapes_file_path(input_dir)
-    write_tfrecord(data_list, output_dir)
+    for cat1, cat2 in zip(data_list.values(), gt_data_list.values()):
+        for list1, list2 in zip(cat1.values(), cat2.values()):
+            # Do not care about orders.
+            assert set(list1) == set(list2)
 
-    # Read the created tfrecord file.
-    init_op = tf.group(tf.global_variables_initializer(),
-                       tf.local_variables_initializer())
-    for category in DATA_CATEGORY:
-        dataset = read_tfrecord(
-            os.path.join(output_dir, category + '.tfrecord'))
-        next_element = dataset.make_one_shot_iterator().get_next()
+
+def test_id2trainid_tensor():
+    """Test it can correctly convert id to trainId.
+    """
+    IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
+    with tf.Graph().as_default():
+        id_tensor = tf.placeholder(tf.int64, (IMAGE_HEIGHT, IMAGE_WIDTH, 1))
+        trainid_tensor = id2trainid_tensor(id_tensor)
         with tf.Session() as sess:
-            # The op for initializing the variables.
-            sess.run(init_op)
-            i = 0
-            while True:
-                try:
-                    sample = sess.run(next_element)
-                    gt_image = np.array(
-                        Image.open(open(sample['filename'].decode(),
-                                        'rb')).convert('RGB'))
-                    assert np.array_equal(sample['image'], gt_image)
-                    i += 1
-                except tf.errors.OutOfRangeError:
-                    assert i == 4
-                    break
+            trainid = sess.run(
+                trainid_tensor,
+                feed_dict={
+                    id_tensor: np.ones((IMAGE_HEIGHT, IMAGE_WIDTH, 1)) * 8.
+                })
+        # Checks output size is correct.
+        assert trainid.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 1)
+        # Checks id is correctly converted to trainId.
+        assert trainid[0, 0, 0] == 2
+
+
+def test_trainid2color_tensor():
+    """Test it can correctly convert trainId to color.
+    """
+    IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
+    with tf.Graph().as_default():
+        id_tensor = tf.placeholder(tf.int64, (IMAGE_HEIGHT, IMAGE_WIDTH, 1))
+        color_tensor = trainid2color_tensor(id_tensor)
+        with tf.Session() as sess:
+            color = sess.run(
+                color_tensor,
+                feed_dict={
+                    id_tensor: np.ones((IMAGE_HEIGHT, IMAGE_WIDTH, 1)) * 2.
+                })
+        # Checks output size is correct.
+        assert color.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 3)
+        # Checks trainId is correctly converted to color.
+        assert np.all(color[0, 0, :] == np.array((244, 35, 232)))
