@@ -64,12 +64,15 @@ class Trainer:
         # Loss computation should always live in cpu.
         # TODO: Can it be in gpu?
         with tf.device('cpu:0'):
-            self.loss = self.loss_fn(self.batch['label'], self.logits,
-                                     self.ignore_mask)
+            self.loss = self.loss_fn(
+                tf.squeeze(self.batch['label'], squeeze_dims=[3]), self.logits,
+                self.ignore_mask)
             # Add to summary.
-            image_summary = tf.concat((self.batch['image'][0],
-                                       trainid2color_tensor(self.batch['label'][0]),
-                                       trainid2color_tensor(self.predictions[0])), axis=1)
+            image_summary = tf.concat(
+                (self.batch['image'][0] * 255.,
+                 trainid2color_tensor(self.batch['label'][0]),
+                 trainid2color_tensor(self.predictions[0])),
+                axis=1)
             tf.summary.image('visualization', tf.expand_dims(image_summary, 0))
             tf.summary.scalar('train_loss', self.loss)
             self.summary_op = tf.summary.merge_all()
@@ -79,17 +82,18 @@ class Trainer:
             var_list=tf.trainable_variables(),
             global_step=self.global_step)
 
-
     def train(self, sess):
         train_writer = tf.summary.FileWriter(self.logdir, sess.graph)
         while True:
             try:
                 start = time.clock()
-                summary, loss, _ = sess.run([self.summary_op, self.loss, self.train_op])
+                summary, loss, _ = sess.run(
+                    [self.summary_op, self.loss, self.train_op])
                 proc_time = time.clock() - start
                 step = tf.train.global_step(sess, self.global_step)
-                self.logger.info('step: {},\tproc_time: {:06f},\tloss: {:06f}'.format(
-                    step, proc_time, loss))
+                self.logger.info(
+                    'step: {},\tproc_time: {:06f},\tloss: {:06f}'.format(
+                        step, proc_time, loss))
                 train_writer.add_summary(summary, step)
             except tf.errors.OutOfRangeError:
                 break
