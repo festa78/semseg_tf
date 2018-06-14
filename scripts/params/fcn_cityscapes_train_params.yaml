@@ -1,0 +1,34 @@
+# Parameters for FCN training on Cityscapes dataset.
+
+# The batch size on training.
+batch_size: 12
+# The crop height size for random cropping.
+crop_height: 500
+# The crop width size for random cropping.
+crop_width: 500
+# The directory path to save TensorBoard summaries.
+logdir: "./tmp"
+# The maximum number of steps to train.
+max_steps: 15000
+# The number of classes to use.
+num_classes: 20
+# The number of workers for tf.data.Dataset.map().
+num_parallel_calls: 10
+# The parameter for tf.data.Dataset.shuffle().
+prefetch_buffer_size: 100
+# If true, random flip image horizontally.
+random_flip_left_right: true
+# Scale factor used to adjust brightness.
+random_brightness: 0.2
+# Scale factor used to adjust contrast.
+random_contrast: 0.2
+# Scale factor used to adjust hue.
+random_hue: 0.2
+# Scale factor used to adjust saturation.
+random_saturation: 0.2
+# The parameter for tf.data.Dataset.shuffle().
+shuffle_buffer_size: 100
+# Path to the cityscapes tfrecord data directory. The data should be created by sss.data.tfrecord.TFRecordWriter.
+tfdata_dir: "/home/ubuntu/workspace/local_data/cityscapes/tfrecord"
+# The path to pretrain model of vgg.
+vgg_pretrain_ckpt_path: "/home/ubuntu/workspace/local_data/vgg_16.ckpt"
