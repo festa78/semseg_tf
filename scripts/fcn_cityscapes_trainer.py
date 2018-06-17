@@ -105,6 +105,10 @@ if __name__ == '__main__':
             train_data_processor.process_image_and_label(
                 random_flip_left_right_image_and_label)
 
+        class_weights = np.array(options['class_weights'], dtype=np.float)
+        assert class_weights.shape[0] == options['num_classes']
+        class_weights = tf.constant(class_weights, dtype=tf.float32)
+
         # Gets batch iterator.
         # XXX Process validation dataset as well.
         batch = train_data_processor.get_next()
@@ -121,14 +125,15 @@ if __name__ == '__main__':
             decay_steps=options['max_steps'],
             end_learning_rate=0.000001,
             power=0.9)
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        # optimizer = tf.train.GradientDescentOptimizer(
-        #     learning_rate=learning_rate)
+        # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        optimizer = tf.train.GradientDescentOptimizer(
+            learning_rate=learning_rate)
 
-        trainer = Trainer(model, batch, cross_entropy, optimizer, global_step,
+        trainer = Trainer(model, batch, cross_entropy, class_weights, optimizer, global_step,
                           logdir_fullpath)
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'])
+        if 'vgg_pretrain_ckpt_path' in options.keys():
+            model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'])
         trainer.train(sess)

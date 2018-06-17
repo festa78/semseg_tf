@@ -17,6 +17,10 @@ def cross_entropy(labels, logits, weights):
     weights: (N, H, W) tf.Tensor
         weights which weight on losses of each pixel
         before conducting reduce mean operation.
+
+    Returns
+    -------
+    Scalar tensor of mean cross entropy loss.
     """
     return tf.reduce_mean(
         tf.losses.sparse_softmax_cross_entropy(

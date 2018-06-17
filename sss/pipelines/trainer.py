@@ -27,10 +27,13 @@ class Trainer:
         Supposed to be constructed by tf.Iterator.get_next().
     loss_fn: functional
         A functional which outputs loss value according to
-        the same sized inputs: predicted output tf.Tensor,
-        true output tf.Tensor, and weight tf.Tensor which
-        weights losses on each pixel when conducting
-        reduce mean operation.
+        the same sized inputs tensors: predicted output
+        tf.Tensor, ground truth output tf.Tensor,
+        and weight tf.Tensor which weights losses
+        on each pixel when conducting reduce mean operation.
+    class_weights: tf.Tensor
+        Weights to losses over classes.
+        This array will be used as the parameter of @p loss_fn.
     optimizer: tf.Train.Optimizer
         A optimizer class which optimizes parameters of
         the @p model with losses computed by @loss_fn.
@@ -42,7 +45,8 @@ class Trainer:
         visualize on TensorBoard.
     """
 
-    def __init__(self, model, batch, loss_fn, optimizer, global_step, logdir):
+    def __init__(self, model, batch, loss_fn, class_weights, optimizer,
+                 global_step, logdir):
         # Inspect inputs.
         if hasattr(model, 'forward') is False:
             raise AttributeError('model object should have .forward() method.')
@@ -51,22 +55,36 @@ class Trainer:
         self.model = model
         self.batch = batch
         self.loss_fn = loss_fn
+        self.class_weights = class_weights
         self.optimizer = optimizer
         self.global_step = global_step
         self.logdir = logdir
         self.logits = model.forward(self.batch['image'])
         self.predictions = tf.argmax(self.logits, axis=3)
 
-        # Ignore label id: 0.
-        # XXX support weighted cross entropy.
-        self.ignore_mask = tf.cast(
-            tf.not_equal(self.batch['label'], 0), tf.int64)
         # Loss computation should always live in cpu.
         # TODO: Can it be in gpu?
         with tf.device('cpu:0'):
+            # Construct class weights tensor.
+            self.class_weights_tensor = tf.cast(
+                tf.reshape(self.batch['label'], shape=[-1]), dtype=tf.float32)
+            self.class_weights_tensor = tf.map_fn(
+                lambda x: self.class_weights[tf.cast(x, dtype=tf.int64)],
+                self.class_weights_tensor)
+            self.class_weights_tensor = tf.reshape(
+                self.class_weights_tensor, shape=tf.shape(self.batch['label']))
+            self.class_weights_tensor = tf.cast(
+                self.class_weights_tensor, dtype=tf.float32)
+            # Ignore label id: 0.
+            ignore_mask = tf.cast(
+                tf.not_equal(self.batch['label'], 0), tf.float32)
+            self.class_weights_tensor = tf.multiply(self.class_weights_tensor,
+                                                    ignore_mask)
+
             self.loss = self.loss_fn(
                 tf.squeeze(self.batch['label'], squeeze_dims=[3]), self.logits,
-                self.ignore_mask)
+                self.class_weights_tensor)
+
             # Add to summary.
             image_summary = tf.concat(
                 (self.batch['image'][0] * 255.,
