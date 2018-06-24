@@ -13,6 +13,9 @@ from sss.data.tfrecord import read_tfrecord, write_tfrecord
 from sss.data.cityscapes import get_cityscapes_file_path
 
 
+IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
+
+
 def _create_sample_cityscapes_structure(tmpdir):
     """Creates dummy cityscapes like data structure.
 
@@ -28,7 +31,6 @@ def _create_sample_cityscapes_structure(tmpdir):
     SUBDIRS = ['aaa', 'bbb']
     DATA_CATEGORY = ['train', 'val', 'test']
     FILENAMES = ['test1', 'test2']
-    IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
 
     np.random.seed(1234)
 
@@ -98,6 +100,8 @@ def test_write_read_tfrecord(tmpdir):
                         Image.open(open(sample['filename'].decode(),
                                         'rb')).convert('RGB'))
                     assert np.array_equal(sample['image'], gt_image)
+                    assert sample['height'] == IMAGE_HEIGHT
+                    assert sample['width'] == IMAGE_WIDTH
                     i += 1
                 except tf.errors.OutOfRangeError:
                     assert i == 4

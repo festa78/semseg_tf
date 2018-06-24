@@ -167,10 +167,13 @@ def id2trainid_tensor(label):
         functional which converts id to trainId.
 
     """
-    return tf.py_func(
+    label_trainid =  tf.py_func(
         func=lambda x: np.array([id2label[int(i)].trainId for i in np.nditer(x)], dtype=np.int64).reshape(x.shape),
         inp=[label],
         Tout=tf.int64)
+    # Restore shape as py_func loses shape information.
+    label_trainid.set_shape(label.get_shape())
+    return label_trainid
 
 
 def trainid2color_tensor(label):
@@ -187,7 +190,11 @@ def trainid2color_tensor(label):
         functional which converts id to color.
 
     """
-    return tf.py_func(
+    label_color =  tf.py_func(
         func=lambda x: np.array([trainId2label[int(i)].color for i in np.nditer(x)], dtype=np.float32).reshape((x.shape[0], x.shape[1], 3)),
         inp=[label],
         Tout=tf.float32)
+    # Restore shape as py_func loses shape information.
+    shape = label.get_shape()
+    label_color.set_shape([shape[0], shape[1], 3])
+    return label_color

@@ -2,14 +2,18 @@
 
 # The batch size on training.
 batch_size: 10
-# The crop height size for random cropping.
-crop_height: 500
-# The crop width size for random cropping.
-crop_width: 500
+# The crop height size for random cropping in training.
+train_crop_height: 500
+# The crop width size for random cropping in training.
+train_crop_width: 500
+# The height of resized image for validation.
+val_resized_height: 1024
+# The width of resized image for validation.
+val_resized_width: 2048
 # The directory path to save TensorBoard summaries.
 logdir: "./tmp"
-# The maximum number of steps to train.
-max_steps: 15000
+# The  number of epochs to train.
+num_epochs: 15000
 # The number of classes to use.
 num_classes: 20
 # The number of workers for tf.data.Dataset.map().
@@ -26,15 +30,44 @@ random_contrast: 0.2
 random_hue: 0.2
 # Scale factor used to adjust saturation.
 random_saturation: 0.2
+# Evaluate model by validation dataset and compute metrics
+# every @p evaluate_freq epochs.
+evaluate_freq: 10
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
-# Path to the cityscapes tfrecord data directory. The data should be created by sss.data.tfrecord.TFRecordWriter.
+# Path to the cityscapes tfrecord data directory.
+# The data should be created by sss.data.tfrecord.TFRecordWriter.
 tfdata_dir: "/home/ubuntu/workspace/local_data/cityscapes/tfrecord"
 # The path to pretrain model of vgg.
 vgg_pretrain_ckpt_path: "/home/ubuntu/workspace/local_data/vgg_16.ckpt"
-# The 20 classes trainId class weights to use for weighted cross entropy.
+# The 20 classes trainId class weights to use for weighted
+# train cross entropy, loss, and iou computation.
 # Values are computed from inverse class distribution.
-class_weights:
+train_class_weights:
+  - 0.00172269
+  - 0.00060548
+  - 0.00366868
+  - 0.00097808
+  - 0.0340615
+  - 0.02544692
+  - 0.01818879
+  - 0.10743222
+  - 0.04049531
+  - 0.00140149
+  - 0.01928097
+  - 0.0055546
+  - 0.0183139
+  - 0.16521269
+  - 0.00319161
+  - 0.08346749
+  - 0.09491775
+  - 0.09584992
+  - 0.22627541
+  - 0.0539345
+# The 20 classes trainId class weights to use for weighted
+# val cross entropy, loss, and iou computation.
+# Values are computed from inverse class distribution.
+val_class_weights:
   - 0.00172269
   - 0.00060548
   - 0.00366868

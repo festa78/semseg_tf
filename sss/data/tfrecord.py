@@ -91,5 +91,11 @@ def _parse_bytes_sample(bytedata):
     image = tf.cast(image, tf.float32)
     label = tf.cast(label, tf.int64)
 
-    sample = {'image': image, 'label': label, 'filename': filename}
+    sample = {
+        'height': height_org,
+        'width': width_org,
+        'image': image,
+        'label': label,
+        'filename': filename
+    }
     return sample

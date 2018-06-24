@@ -1,7 +1,7 @@
 class DataPreprocessor:
     """This class will process tf.data.Dataset to
     add various pre-processing on top.
-    Also finally make one shot iterator with several
+    Also finally make an initializable iterator with several
     data load options.
 
     Parameters
@@ -14,9 +14,6 @@ class DataPreprocessor:
     batch_size: int
         Make a batch of size of
         @p batch_size. [default: 32]
-    max_epochs: int
-        repeat datasets by @p max_epochs. [default: None]
-        NOTE: Setting None will repeat indefinitely.
     shuffle_buffer_size: int
         If not None or False, shuffle datasets
         with @p shuffle_buffer_size.
@@ -31,13 +28,11 @@ class DataPreprocessor:
                  dataset,
                  num_parallel_calls=10,
                  batch_size=32,
-                 max_epochs=None,
                  shuffle_buffer_size=100,
                  prefetch_buffer_size=100):
         self.dataset = dataset
         self.num_parallel_calls = num_parallel_calls
         self.batch_size = batch_size
-        self.max_epochs = max_epochs
         self.shuffle_buffer_size = shuffle_buffer_size
         self.prefetch_buffer_size = prefetch_buffer_size
 
@@ -53,6 +48,7 @@ class DataPreprocessor:
         kwargs: dict
             A parameter dictionary which is necessary for the functionals.
         """
+
         def processor(x):
             x['image'] = process_fn(image=x['image'], **kwargs)
             return x
@@ -72,6 +68,7 @@ class DataPreprocessor:
         kwargs: dict
             A parameter dictionary which is necessary for the functionals.
         """
+
         def processor(x):
             x['label'] = process_fn(label=x['label'], **kwargs)
             return x
@@ -92,6 +89,7 @@ class DataPreprocessor:
         kwargs: dict
             A parameter dictionary which is necessary for the functionals.
         """
+
         def processor(x):
             x['image'], x['label'] = process_fn(
                 image=x['image'], label=x['label'], **kwargs)
@@ -100,16 +98,19 @@ class DataPreprocessor:
         self.dataset = self.dataset.map(lambda x: processor(x),
                                         self.num_parallel_calls)
 
+    def get_iterator(self):
+        """Make one shot iterator with several data load options
+        include shuffle, batching, and prefetching.
 
-    def get_next(self):
-        """Make one shot iterator with several data load options.
-        It finally returns a .get_next() object.
+        Returns
+        -------
+        iterator: tf.data.Iterator
+            The initializable iterator.
         """
-        self.dataset = self.dataset.repeat(self.max_epochs)
         if self.shuffle_buffer_size not in (None, False):
             self.dataset = self.dataset.shuffle(self.shuffle_buffer_size)
         self.dataset = self.dataset.batch(self.batch_size)
         if self.prefetch_buffer_size not in (None, False):
             self.dataset = self.dataset.prefetch(self.prefetch_buffer_size)
-        iterator = self.dataset.make_one_shot_iterator()
-        return iterator.get_next()
+        iterator = self.dataset.make_initializable_iterator()
+        return iterator

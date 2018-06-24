@@ -121,7 +121,8 @@ def test_fcn_update():
                 out = dut.forward(dummy_in)
 
             with tf.device("/cpu:0"):
-                loss = cross_entropy(out, dummy_gt, 1.)
+                loss = cross_entropy(
+                    tf.squeeze(dummy_gt, squeeze_dims=[3]), out, 1.)
 
             with tf.device("/gpu:0"):
                 optimizer = tf.train.AdamOptimizer()

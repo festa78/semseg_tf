@@ -194,7 +194,7 @@ class FCN:
         return upscore
 
     @staticmethod
-    def restore_vgg_weights(sess, vgg_pretrain_ckpt_path):
+    def restore_vgg_weights(sess, vgg_pretrain_ckpt_path, scope_prefix='/'):
         """Restore pretrained vgg weights.
         Parameters
         ----------
@@ -206,10 +206,10 @@ class FCN:
         # Make the dictionary to correspond variables between fcn and vgg.
         var_list = {}
         var_list_fcn = tf.get_collection(
-            key=tf.GraphKeys.TRAINABLE_VARIABLES, scope='fcn')
+            key=tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_prefix + 'fcn')
         for var in var_list_fcn:
             if 'score' not in var.name:
-                var_list[var.name.replace('fcn', 'vgg_16')[:-2]] = var
+                var_list[var.name.replace(scope_prefix + 'fcn', 'vgg_16')[:-2]] = var
         vgg_saver = tf.train.Saver(var_list=var_list)
         vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
 
@@ -225,7 +225,7 @@ class FCN:
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        with tf.variable_scope('fcn'):
+        with tf.variable_scope('fcn', reuse=tf.AUTO_REUSE):
             out = self.conv1_1(x)
             out = self.conv1_2(out)
             out = self.pool1(out)

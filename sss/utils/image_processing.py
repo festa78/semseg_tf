@@ -59,8 +59,20 @@ def random_crop_image_and_label(image, label, crop_size):
 
     image_crop, label_crop = combined_crop[..., :3], combined_crop[..., 3]
     label_crop = tf.cast(label_crop, tf.int64)
-    # Avoid losing shape information.
+
     image_crop = tf.reshape(image_crop, (crop_size[0], crop_size[1], 3))
     label_crop = tf.reshape(label_crop, (crop_size[0], crop_size[1], 1))
 
     return image_crop, label_crop
+
+
+def resize_image_and_label(image,
+                           label,
+                           size,
+                           method=tf.image.ResizeMethod.BILINEAR,
+                           align_corners=False):
+    image_resize = tf.image.resize_images(
+        image, size, method=method, align_corners=align_corners)
+    label_resize = tf.image.resize_images(
+        label, size, method=method, align_corners=align_corners)
+    return image_resize, label_resize
