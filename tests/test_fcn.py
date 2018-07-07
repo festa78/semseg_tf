@@ -45,21 +45,26 @@ def test_fcn_init():
         assert hasattr(dut, 'dropout7')
         assert hasattr(dut, 'score_fr')
         assert hasattr(dut, 'upscore32')
+        assert not hasattr(dut, 'upscore16')
+        assert not hasattr(dut, 'upscore8')
         assert not hasattr(dut, 'upscore2')
         assert not hasattr(dut, 'score_pool4')
-        assert not hasattr(dut, 'upscore4')
         assert not hasattr(dut, 'score_pool3')
 
         dut = fcn16(NUM_CLASSES)
+        assert not hasattr(dut, 'upscore32')
+        assert hasattr(dut, 'upscore16')
+        assert not hasattr(dut, 'upscore8')
         assert hasattr(dut, 'upscore2')
         assert hasattr(dut, 'score_pool4')
-        assert not hasattr(dut, 'upscore4')
         assert not hasattr(dut, 'score_pool3')
 
         dut = fcn8(NUM_CLASSES)
+        assert not hasattr(dut, 'upscore32')
+        assert not hasattr(dut, 'upscore16')
+        assert hasattr(dut, 'upscore8')
         assert hasattr(dut, 'upscore2')
         assert hasattr(dut, 'score_pool4')
-        assert hasattr(dut, 'upscore4')
         assert hasattr(dut, 'score_pool3')
 
 
@@ -85,9 +90,7 @@ def test_fcn_architecture():
         "fcn/fc6/weights:0", "fcn/fc6/biases:0", "fcn/fc7/weights:0",
         "fcn/fc7/biases:0", "fcn/score_fr/weights:0", "fcn/score_fr/biases:0",
         "fcn/score_pool3/weights:0", "fcn/score_pool3/biases:0",
-        "fcn/score_pool4/weights:0", "fcn/score_pool4/biases:0",
-        "fcn/upscore2/weights:0", "fcn/upscore32/weights:0",
-        "fcn/upscore4/weights:0"
+        "fcn/score_pool4/weights:0", "fcn/score_pool4/biases:0"
     ])
 
     with tf.Graph().as_default():
@@ -133,6 +136,11 @@ def test_fcn_update():
             with tf.Session() as sess:
                 sess.run(tf.global_variables_initializer())
                 before = sess.run(tf.trainable_variables())
+                pred, outsizes = sess.run(
+                    (out, dut.outsizes),
+                    feed_dict={
+                        dummy_in: np.ones((1, IMAGE_SIZE, IMAGE_SIZE, 3)),
+                    })
                 sess.run(
                     train_op,
                     feed_dict={

@@ -32,7 +32,7 @@ random_hue: 0.2
 random_saturation: 0.2
 # Evaluate model by validation dataset and compute metrics
 # every @p evaluate_freq epochs.
-evaluate_freq: 10
+evaluate_freq: 1
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
 # Path to the cityscapes tfrecord data directory.

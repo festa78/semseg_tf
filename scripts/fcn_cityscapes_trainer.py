@@ -35,6 +35,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     options = yaml.load(open(args.params_yaml))
+    print(yaml.dump(options))
 
     # Initializations.
     tf.set_random_seed(1234)
@@ -139,9 +140,9 @@ if __name__ == '__main__':
             decay_steps=10000,
             end_learning_rate=0.000001,
             power=0.9)
-        # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        optimizer = tf.train.GradientDescentOptimizer(
-            learning_rate=learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        # optimizer = tf.train.GradientDescentOptimizer(
+        #     learning_rate=learning_rate)
 
         trainer = Trainer(
             model=model,
@@ -160,5 +161,6 @@ if __name__ == '__main__':
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         if 'vgg_pretrain_ckpt_path' in options.keys():
-            model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'], 'model/')
+            model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'],
+                                      'model/')
         trainer.train(sess)

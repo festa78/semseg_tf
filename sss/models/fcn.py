@@ -2,6 +2,7 @@ from collections import OrderedDict
 import logging
 logging.basicConfig(level=logging.INFO)
 
+import numpy as np
 from tensorflow.contrib.slim.python.slim.nets import vgg
 import tensorflow as tf
 
@@ -80,11 +81,14 @@ class FCN:
         self.score_fr = self._make_conv2d(
             out_channels=self.num_classes, kernel_size=1, name='score_fr')
 
-        ksize_upscore32 = 64
-        stride_upscore32 = 32
+        if self.mode == 'fcn32':
+            self.upscore32 = self._make_upscore(
+                out_channels=self.num_classes,
+                kernel_size=64,
+                stride=32,
+                name='upscore32')
+
         if self.mode in ('fcn16', 'fcn8'):
-            ksize_upscore32 = 32
-            stride_upscore32 = 16
             self.upscore2 = self._make_upscore(
                 out_channels=self.num_classes,
                 kernel_size=4,
@@ -96,25 +100,29 @@ class FCN:
                 kernel_size=1,
                 name='score_pool4')
 
-        if self.mode == 'fcn8':
-            ksize_upscore32 = 16
-            stride_upscore32 = 8
-            self.upscore4 = self._make_upscore(
-                out_channels=self.num_classes,
-                kernel_size=4,
-                stride=2,
-                name='upscore4')
+            if self.mode == 'fcn16':
+                self.upscore16 = self._make_upscore(
+                    out_channels=self.num_classes,
+                    kernel_size=32,
+                    stride=16,
+                    name='upscore16')
+            else:
+                self.upscore_pool4 = self._make_upscore(
+                    out_channels=self.num_classes,
+                    kernel_size=4,
+                    stride=2,
+                    name='upscore_pool4')
 
-            self.score_pool3 = self._make_conv2d(
-                out_channels=self.num_classes,
-                kernel_size=1,
-                name='score_pool3')
+                self.upscore8 = self._make_upscore(
+                    out_channels=self.num_classes,
+                    kernel_size=16,
+                    stride=8,
+                    name='upscore8')
 
-        self.upscore32 = self._make_upscore(
-            out_channels=self.num_classes,
-            kernel_size=ksize_upscore32,
-            stride=stride_upscore32,
-            name='upscore32')
+                self.score_pool3 = self._make_conv2d(
+                    out_channels=self.num_classes,
+                    kernel_size=1,
+                    name='score_pool3')
 
     def _make_conv_weights(self, shape, std):
         init_op = tf.truncated_normal_initializer(stddev=std)
@@ -172,22 +180,34 @@ class FCN:
         strides = [1, stride, stride, 1]
 
         def upscore(in_features, shape):
-            with tf.variable_scope(name):
-                in_channels = in_features.get_shape()[3].value
-                out_shape = tf.stack(
-                    [shape[0], shape[1], shape[2], out_channels])
-                # He initialization.
-                std = (2. / (kernel_size * kernel_size * in_channels))**.5
-                weights_shape = [
-                    kernel_size, kernel_size, out_channels, in_channels
-                ]
-                weights = self._make_conv_weights(weights_shape, std)
-                conv_t = tf.nn.conv2d_transpose(
-                    in_features,
-                    weights,
-                    out_shape,
-                    strides=strides,
-                    padding='SAME')
+            in_shape = tf.shape(in_features)
+            out_shape = tf.stack([shape[0], shape[1], shape[2], out_channels])
+
+            # Use fixed weights for bilinear upsampling.
+            factor = (kernel_size + 1) // 2
+            if kernel_size % 2 == 1:
+                center = factor - 1
+            else:
+                center = factor - 0.5
+            og = np.ogrid[:kernel_size, :kernel_size]
+            filt = (1 - abs(og[0] - center) / factor) * (
+                1 - abs(og[1] - center) / factor)
+
+            in_channels = in_features.get_shape()[3].value
+            weights = np.zeros(
+                (kernel_size, kernel_size, out_channels, in_channels),
+                dtype=np.float32)
+            weights[:, :,
+                    list(range(out_channels)),
+                    list(range(in_channels))] = filt[..., np.newaxis]
+            weights = tf.constant(weights, dtype=tf.float32)
+            conv_t = tf.nn.conv2d_transpose(
+                in_features,
+                weights,
+                out_shape,
+                strides=strides,
+                padding='SAME')
+
             self.outsizes[name] = tf.shape(conv_t)
             return conv_t
 
@@ -209,7 +229,8 @@ class FCN:
             key=tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_prefix + 'fcn')
         for var in var_list_fcn:
             if 'score' not in var.name:
-                var_list[var.name.replace(scope_prefix + 'fcn', 'vgg_16')[:-2]] = var
+                var_list[var.name.replace(scope_prefix + 'fcn',
+                                          'vgg_16')[:-2]] = var
         vgg_saver = tf.train.Saver(var_list=var_list)
         vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
 
@@ -226,6 +247,7 @@ class FCN:
             The output tensor of the network.
         """
         with tf.variable_scope('fcn', reuse=tf.AUTO_REUSE):
+            x_size = tf.shape(x)
             out = self.conv1_1(x)
             out = self.conv1_2(out)
             out = self.pool1(out)
@@ -263,18 +285,23 @@ class FCN:
 
             out = self.score_fr(out)
 
+            if self.mode == 'fcn32':
+                out = self.upscore32(out, x_size)
+                return out
+
             if self.mode in ('fcn16', 'fcn8'):
-                out = self.upscore2(out, tf.shape(pool4))
-                out2 = self.score_pool4(pool4)
+                out2 = self.score_pool4(pool4 * 0.01)
+                out = self.upscore2(out, tf.shape(out2))
                 out = tf.add(out, out2)
                 if self.mode == 'fcn8':
-                    out = self.upscore4(out, tf.shape(pool3))
-                    out2 = self.score_pool3(pool3)
+                    out2 = self.score_pool3(pool3 * 0.0001)
+                    out = self.upscore_pool4(out, tf.shape(out2))
                     out = tf.add(out, out2)
+                    out = self.upscore8(out, x_size)
+                    return out
 
-            out = self.upscore32(out, tf.shape(x))
-
-        return out
+                out = self.upscore16(out, x_size)
+                return out
 
 
 def fcn32(num_classes):
