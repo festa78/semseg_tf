@@ -1,11 +1,11 @@
 # Parameters for FCN training on Cityscapes dataset.
 
 # The batch size on training.
-batch_size: 10
+batch_size: 4
 # The crop height size for random cropping in training.
-train_crop_height: 500
+train_crop_height: 720
 # The crop width size for random cropping in training.
-train_crop_width: 500
+train_crop_width: 720
 # The height of resized image for validation.
 val_resized_height: 1024
 # The width of resized image for validation.

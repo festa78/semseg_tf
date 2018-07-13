@@ -125,7 +125,7 @@ if __name__ == '__main__':
             options['val_class_weights'], dtype=np.float)
         assert train_class_weights.shape[0] == options['num_classes']
         assert val_class_weights.shape[0] == options['num_classes']
-        trian_class_weights = tf.constant(train_class_weights, dtype=tf.float32)
+        train_class_weights = tf.constant(train_class_weights, dtype=tf.float32)
         val_class_weights = tf.constant(val_class_weights, dtype=tf.float32)
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -135,10 +135,10 @@ if __name__ == '__main__':
 
         # XXX get proper parameters.
         learning_rate = tf.train.polynomial_decay(
-            learning_rate=0.0001,
+            learning_rate=0.01,
             global_step=global_step,
             decay_steps=10000,
-            end_learning_rate=0.000001,
+            end_learning_rate=0.00001,
             power=0.9)
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         # optimizer = tf.train.GradientDescentOptimizer(

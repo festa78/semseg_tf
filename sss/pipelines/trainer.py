@@ -86,8 +86,6 @@ class Trainer:
         self.val_image_height = self.val_batch['height']
         self.val_image_width = self.val_batch['width']
         self.loss_fn = loss_fn
-        self.train_class_weights = train_class_weights
-        self.val_class_weights = val_class_weights
         self.optimizer = optimizer
         self.global_step = global_step
         self.logdir = logdir
@@ -104,7 +102,7 @@ class Trainer:
             raise AttributeError(
                 'val_batch object should have "image" and "label" keys')
 
-        self.train_loss, self.train_image_summary, \
+        self.train_class_weights, self.train_loss, self.train_image_summary, \
             self.train_mean_loss, \
             self.train_mean_loss_update_op, \
             self.train_mean_iou, \
@@ -112,10 +110,10 @@ class Trainer:
             self.train_metric_reset_op, \
             self.train_step_summary_op, \
             self.train_epoch_summary_op = self.compute_metrics(
-                'train', self.train_batch['image'], self.train_batch['label'],
+                'train', self.train_batch['image'], self.train_batch['label'], train_class_weights
                 )
 
-        self.val_loss, self.val_image_summary, \
+        self.val_class_weights, self.val_loss, self.val_image_summary, \
             self.val_mean_loss, \
             self.val_mean_loss_update_op, \
             self.val_mean_iou, \
@@ -123,7 +121,7 @@ class Trainer:
             self.val_metric_reset_op, \
             self.val_step_summary_op, \
             self.val_epoch_summary_op = self.compute_metrics(
-                'val', self.val_batch['image'], self.val_batch['label'],
+                'val', self.val_batch['image'], self.val_batch['label'], val_class_weights
                 )
 
         self.train_op = self.optimizer.minimize(
@@ -131,14 +129,15 @@ class Trainer:
             var_list=tf.trainable_variables(scope='model'),
             global_step=self.global_step)
 
-    def compute_metrics(self, mode, image, label):
+    def compute_metrics(self, mode, image, label, class_weights):
         with tf.variable_scope('model'):
             logits = self.model.forward(image)
             predictions = tf.argmax(logits, axis=3)
 
         # Metric computations should live in cpu.
         with tf.device('cpu:0'):
-            class_weights_tensor = self.compute_class_weights(label)
+            class_weights_tensor = self.compute_class_weights(
+                label, class_weights=class_weights)
 
             with tf.variable_scope('{}_step_metrics'.format(mode)) as scope:
                 loss = self.loss_fn(
@@ -177,7 +176,7 @@ class Trainer:
             step_summary_op = tf.summary.merge(step_summaries)
             epoch_summary_op = tf.summary.merge(epoch_summaries)
 
-        return loss, image_summary, mean_loss, mean_loss_update_op, \
+        return class_weights_tensor, loss, image_summary, mean_loss, mean_loss_update_op, \
             mean_iou, mean_iou_update_op, metric_reset_op, \
             step_summary_op, epoch_summary_op
 
@@ -207,7 +206,7 @@ class Trainer:
             self.class_weights_tensor = tf.cast(
                 tf.reshape(label, shape=[-1]), dtype=tf.float32)
             self.class_weights_tensor = tf.map_fn(
-                lambda x: self.class_weights[tf.cast(x, dtype=tf.int64)],
+                lambda x: class_weights[tf.cast(x, dtype=tf.int64)],
                 self.class_weights_tensor)
             self.class_weights_tensor = tf.reshape(
                 self.class_weights_tensor, shape=tf.shape(label))
