@@ -29,7 +29,7 @@ class DataPreprocessor:
                  num_parallel_calls=10,
                  batch_size=32,
                  shuffle_buffer_size=100,
-                 prefetch_buffer_size=100):
+                 prefetch_buffer_size=1):
         self.dataset = dataset
         self.num_parallel_calls = num_parallel_calls
         self.batch_size = batch_size

@@ -102,7 +102,9 @@ class Trainer:
             raise AttributeError(
                 'val_batch object should have "image" and "label" keys')
 
-        self.train_class_weights, self.train_loss, self.train_image_summary, \
+        self.train_class_weights, \
+            self.train_loss, \
+            self.train_image_summary, \
             self.train_mean_loss, \
             self.train_mean_loss_update_op, \
             self.train_mean_iou, \
@@ -113,7 +115,9 @@ class Trainer:
                 'train', self.train_batch['image'], self.train_batch['label'], train_class_weights
                 )
 
-        self.val_class_weights, self.val_loss, self.val_image_summary, \
+        self.val_class_weights, \
+            self.val_loss, \
+            self.val_image_summary, \
             self.val_mean_loss, \
             self.val_mean_loss_update_op, \
             self.val_mean_iou, \
@@ -203,15 +207,7 @@ class Trainer:
             This has the same shape to @p label.
         """
         if class_weights is not None:
-            self.class_weights_tensor = tf.cast(
-                tf.reshape(label, shape=[-1]), dtype=tf.float32)
-            self.class_weights_tensor = tf.map_fn(
-                lambda x: class_weights[tf.cast(x, dtype=tf.int64)],
-                self.class_weights_tensor)
-            self.class_weights_tensor = tf.reshape(
-                self.class_weights_tensor, shape=tf.shape(label))
-            self.class_weights_tensor = tf.cast(
-                self.class_weights_tensor, dtype=tf.float32)
+            self.class_weights_tensor = tf.gather(class_weights, label)
         else:
             self.class_weights_tensor = tf.ones_like(label, dtype=tf.float32)
 

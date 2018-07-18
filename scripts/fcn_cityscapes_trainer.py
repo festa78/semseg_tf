@@ -64,8 +64,8 @@ if __name__ == '__main__':
             dataset=val_dataset,
             num_parallel_calls=options['num_parallel_calls'],
             batch_size=1,
-            shuffle_buffer_size=None,
-            prefetch_buffer_size=None)
+            shuffle_buffer_size=1,
+            prefetch_buffer_size=1)
 
         # Pre-process training data.
         # Add more pre-procesing blocks.
@@ -135,10 +135,10 @@ if __name__ == '__main__':
 
         # XXX get proper parameters.
         learning_rate = tf.train.polynomial_decay(
-            learning_rate=0.01,
+            learning_rate=0.001,
             global_step=global_step,
             decay_steps=10000,
-            end_learning_rate=0.00001,
+            end_learning_rate=0.000001,
             power=0.9)
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         # optimizer = tf.train.GradientDescentOptimizer(

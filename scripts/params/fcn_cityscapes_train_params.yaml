@@ -18,8 +18,8 @@ num_epochs: 15000
 num_classes: 20
 # The number of workers for tf.data.Dataset.map().
 num_parallel_calls: 10
-# The parameter for tf.data.Dataset.shuffle().
-prefetch_buffer_size: 100
+# The parameter for tf.data.Dataset.prefetch().
+prefetch_buffer_size: 10
 # If true, random flip image horizontally.
 random_flip_left_right: true
 # Scale factor used to adjust brightness.
