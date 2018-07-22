@@ -12,7 +12,6 @@ import project_root
 from sss.data.tfrecord import read_tfrecord, write_tfrecord
 from sss.data.cityscapes import get_cityscapes_file_path
 
-
 IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
 
 
@@ -87,7 +86,7 @@ def test_write_read_tfrecord(tmpdir):
                        tf.local_variables_initializer())
     for category in DATA_CATEGORY:
         dataset = read_tfrecord(
-            os.path.join(output_dir, category + '.tfrecord'))
+            os.path.join(output_dir, category + '_0000.tfrecord'))
         next_element = dataset.make_one_shot_iterator().get_next()
         with tf.Session() as sess:
             # The op for initializing the variables.

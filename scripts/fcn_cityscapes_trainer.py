@@ -50,7 +50,7 @@ if __name__ == '__main__':
     with tf.device('/cpu:0'):
         # Read from tfrecord format data made by sss.data.tfrecord.TFRecordWriter.
         train_dataset = read_tfrecord(
-            os.path.join(options['tfdata_dir'], 'train.tfrecord'))
+            os.path.join(options['tfdata_dir'], 'train_*.tfrecord'))
         train_data_processor = DataPreprocessor(
             dataset=train_dataset,
             num_parallel_calls=options['num_parallel_calls'],
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             prefetch_buffer_size=options['prefetch_buffer_size'])
 
         val_dataset = read_tfrecord(
-            os.path.join(options['tfdata_dir'], 'val.tfrecord'))
+            os.path.join(options['tfdata_dir'], 'val_*.tfrecord'))
         val_data_processor = DataPreprocessor(
             dataset=val_dataset,
             num_parallel_calls=options['num_parallel_calls'],

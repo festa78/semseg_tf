@@ -43,8 +43,6 @@ if __name__ == '__main__':
                 for i, count in enumerate(np.bincount(label.flatten())):
                     class_counts[i] += count
                 loop += 1
-                # if loop > 10:
-                #     break
             except tf.errors.OutOfRangeError:
                 break
 
