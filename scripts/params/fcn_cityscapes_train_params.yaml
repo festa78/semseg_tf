@@ -2,14 +2,18 @@
 
 # The batch size on training.
 batch_size: 4
-# The crop height size for random cropping in training.
-train_crop_height: 720
-# The crop width size for random cropping in training.
-train_crop_width: 720
+# The height of resized image for train.
+train_resized_height: 512
+# The width of resized image for train.
+train_resized_width: 1024
 # The height of resized image for validation.
-val_resized_height: 1024
+val_resized_height: 512
 # The width of resized image for validation.
-val_resized_width: 2048
+val_resized_width: 1024
+# The crop height size for random cropping in training.
+train_crop_height: 224
+# The crop width size for random cropping in training.
+train_crop_width: 224
 # The directory path to save TensorBoard summaries.
 logdir: "./tmp"
 # The  number of epochs to train.

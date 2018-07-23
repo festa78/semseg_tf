@@ -69,6 +69,14 @@ if __name__ == '__main__':
 
         # Pre-process training data.
         # Add more pre-procesing blocks.
+        if options['train_resized_height'] is not None and options['train_resized_width'] is not None:
+            logging.info('Resize train image to ({}, {})'.format(
+                options['train_resized_height'],
+                options['train_resized_width']))
+            train_data_processor.process_image_and_label(
+                resize_image_and_label,
+                size=tf.constant((options['train_resized_height'],
+                                  options['train_resized_width'])))
         if options['random_saturation'] > 0. and options['random_saturation'] < 1.:
             logging.info('Randomly adjust saturation by factor {}'.format(
                 options['random_saturation']))
@@ -110,6 +118,8 @@ if __name__ == '__main__':
         train_iterator = train_data_processor.get_iterator()
 
         # Pre-process validation data.
+        logging.info('Resize validation image to ({}, {})'.format(
+            options['val_resized_height'], options['val_resized_width']))
         val_data_processor.process_image_and_label(
             resize_image_and_label,
             size=tf.constant((options['val_resized_height'],
