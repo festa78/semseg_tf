@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+from sss.data.cityscapes import trainid2color_tensor
 from sss.models.fcn import fcn32
 from sss.pipelines.trainer import Trainer
 from sss.utils.losses import cross_entropy
@@ -67,6 +68,7 @@ def _setup_trainer(tmpdir):
             cross_entropy,
             optimizer,
             global_step,
+            trainid2color_tensor,
             str(tmpdir),
             train_class_weights=CLASS_WEIGHTS,
             num_epochs=NUM_EPOCHS,

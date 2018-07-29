@@ -14,7 +14,7 @@ import yaml
 
 import project_root
 
-from sss.data.cityscapes import id2trainid_tensor
+from sss.data.cityscapes import id2trainid_tensor, trainid2color_tensor
 from sss.data.data_preprocessor import DataPreprocessor
 from sss.data.tfrecord import read_tfrecord
 from sss.models.fcn import fcn8, fcn16, fcn32
@@ -173,6 +173,7 @@ if __name__ == '__main__':
             loss_fn=cross_entropy,
             optimizer=optimizer,
             global_step=global_step,
+            color_map_fn=trainid2color_tensor,
             save_dir=save_dir_fullpath,
             resume_path=resume_fullpath,
             train_class_weights=train_class_weights,

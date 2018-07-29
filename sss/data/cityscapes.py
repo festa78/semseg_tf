@@ -158,7 +158,7 @@ def id2trainid_tensor(label):
 
     Parameters
     ----------
-    label: (H, W) tensor
+    label: (H, W, C=1) or (N, H, W, C=1) tensor
         Each element has id.
 
     Returns
@@ -181,8 +181,9 @@ def trainid2color_tensor(label):
 
     Parameters
     ----------
-    label: (H, W) tensor
+    label: (H, W, C=1) or (N, H, W, C=1) tensor
         Each element has id.
+        The last dimension must be a channel axis.
 
     Returns
     -------
@@ -190,11 +191,19 @@ def trainid2color_tensor(label):
         functional which converts id to color.
 
     """
-    label_color =  tf.py_func(
-        func=lambda x: np.array([trainId2label[int(i)].color for i in np.nditer(x)], dtype=np.float32).reshape((x.shape[0], x.shape[1], 3)),
-        inp=[label],
-        Tout=tf.float32)
+
+    def func(x):
+        x_shape = x.shape
+        x_shape = [item for item in x_shape[:-1]] + [3]
+        return np.array(
+            [trainId2label[int(i)].color for i in np.nditer(x)],
+            dtype=np.float32).reshape(x_shape)
+
+    label_color = tf.py_func(func=func, inp=[label], Tout=tf.float32)
+
     # Restore shape as py_func loses shape information.
     shape = label.get_shape()
-    label_color.set_shape([shape[0], shape[1], 3])
+    shape = [item for item in shape[:-1]] + [3]
+    label_color.set_shape(shape)
+
     return label_color

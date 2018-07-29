@@ -38,7 +38,7 @@ random_saturation: 0.2
 # every @p evaluate_freq epochs.
 evaluate_freq: 1
 # The path of .ckpt file to resume session.
-resume_path: "tmp/2018-07-29\ 18:07:06.505769/ckpts/model_00000004.ckpt"
+resume_path:
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
 # Path to the cityscapes tfrecord data directory.

@@ -8,8 +8,6 @@ import time
 
 import tensorflow as tf
 
-from sss.data.cityscapes import trainid2color_tensor
-
 
 class Trainer:
     """Basic training pipeline class which integrate
@@ -42,6 +40,10 @@ class Trainer:
     global_step: tf.Variable
         A global step value to use with optimizer and
         logging purpose.
+    color_map_fn: functional
+        A functional which can convert a class id to
+        a corresponding rgb color.
+        E.g. sss.data.cityscapes.trainid2color_tensor.
     save_dir: str
         A path to the directory to save logs and models.
     train_class_weights: 1d tf.Tensor, default None
@@ -72,6 +74,7 @@ class Trainer:
             loss_fn,
             optimizer,
             global_step,
+            color_map_fn,
             save_dir,
             train_class_weights=None,
             val_class_weights=None,
@@ -93,6 +96,7 @@ class Trainer:
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.global_step = global_step
+        self.color_map_fn = color_map_fn
         self.save_dir = save_dir
         self.num_epochs = num_epochs
         self.evaluate_freq = evaluate_freq
@@ -109,7 +113,8 @@ class Trainer:
                 'val_batch object should have "image" and "label" keys')
 
         # Set up metrics.
-        self.train_class_weights, \
+        self.predictions, \
+            self.train_class_weights, \
             self.train_loss, \
             self.train_image_summary, \
             self.train_mean_loss, \
@@ -122,7 +127,7 @@ class Trainer:
                 'train', self.train_batch['image'], self.train_batch['label'], train_class_weights
                 )
 
-        self.val_class_weights, \
+        _, self.val_class_weights, \
             self.val_loss, \
             self.val_image_summary, \
             self.val_mean_loss, \
@@ -156,7 +161,7 @@ class Trainer:
         os.makedirs(self.ckpt_dir)
 
     def compute_metrics(self, mode, image, label, class_weights):
-        with tf.variable_scope('model'):
+        with tf.variable_scope('model', reuse=tf.AUTO_REUSE):
             logits = self.model.forward(image)
             predictions = tf.argmax(logits, axis=3)
 
@@ -171,8 +176,8 @@ class Trainer:
                     class_weights_tensor)
 
                 image_summary = tf.concat(
-                    (image[0] * 255., trainid2color_tensor(label[0]),
-                     trainid2color_tensor(predictions[0])),
+                    (image[0] * 255., self.color_map_fn(label[0]),
+                     self.color_map_fn(tf.expand_dims(predictions[0], -1))),
                     axis=1)
 
             with tf.variable_scope('{}_epoch_metrics'.format(mode)) as scope:
@@ -202,7 +207,7 @@ class Trainer:
             step_summary_op = tf.summary.merge(step_summaries)
             epoch_summary_op = tf.summary.merge(epoch_summaries)
 
-        return class_weights_tensor, loss, image_summary, mean_loss, mean_loss_update_op, \
+        return predictions, class_weights_tensor, loss, image_summary, mean_loss, mean_loss_update_op, \
             mean_iou, mean_iou_update_op, metric_reset_op, \
             step_summary_op, epoch_summary_op
 
@@ -289,11 +294,10 @@ class Trainer:
                 summary_writer.add_summary(train_epoch_summary, ep)
 
                 with tf.device('/cpu'):
-                    save_path = 'model_{:08d}.ckpt'.format(ep)
+                    save_path = '{:08d}'.format(ep)
                     self.saver.save(sess, os.path.join(self.ckpt_dir,
                                                        save_path))
-                    self.logger.info(
-                        'The session saved at {}'.format(save_path))
+                    self.logger.info('The session saved')
 
                 self.validate(sess, summary_writer, ep)
 
