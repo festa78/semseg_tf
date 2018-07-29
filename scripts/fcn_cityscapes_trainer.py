@@ -3,6 +3,7 @@
 """
 
 import argparse
+from datetime import datetime
 import logging
 logging.basicConfig(level=logging.INFO)
 import os
@@ -42,9 +43,17 @@ if __name__ == '__main__':
     tf.reset_default_graph()
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    logdir_fullpath = os.path.expanduser(options['logdir'])
-    if not os.path.isdir(logdir_fullpath):
-        raise AttributeError('--logdir should be existing directory path.')
+
+    save_dir_fullpath = os.path.expanduser(options['save_dir'])
+    if not os.path.isdir(save_dir_fullpath):
+        raise AttributeError('--save_dir should be existing directory path.')
+    save_dir_fullpath = os.path.join(save_dir_fullpath, str(datetime.now()))
+    os.makedirs(save_dir_fullpath)
+    logging.info('Created save directory to {}'.format(save_dir_fullpath))
+
+    resume_fullpath = None
+    if options['resume_path']:
+        resume_fullpath = os.path.expanduser(options['resume_path'])
 
     # Data part should live in cpu.
     with tf.device('/cpu:0'):
@@ -69,8 +78,9 @@ if __name__ == '__main__':
 
         # Pre-process training data.
         # Add more pre-procesing blocks.
+        logging.info('Preprocess train data')
         if options['train_resized_height'] is not None and options['train_resized_width'] is not None:
-            logging.info('Resize train image to ({}, {})'.format(
+            logging.info('Resize image to ({}, {})'.format(
                 options['train_resized_height'],
                 options['train_resized_width']))
             train_data_processor.process_image_and_label(
@@ -118,6 +128,7 @@ if __name__ == '__main__':
         train_iterator = train_data_processor.get_iterator()
 
         # Pre-process validation data.
+        logging.info('Preprocess validation data')
         logging.info('Resize validation image to ({}, {})'.format(
             options['val_resized_height'], options['val_resized_width']))
         val_data_processor.process_image_and_label(
@@ -162,7 +173,8 @@ if __name__ == '__main__':
             loss_fn=cross_entropy,
             optimizer=optimizer,
             global_step=global_step,
-            logdir=logdir_fullpath,
+            save_dir=save_dir_fullpath,
+            resume_path=resume_fullpath,
             train_class_weights=train_class_weights,
             val_class_weights=val_class_weights,
             num_epochs=options['num_epochs'],
@@ -170,7 +182,8 @@ if __name__ == '__main__':
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        if 'vgg_pretrain_ckpt_path' in options.keys():
+        if options['vgg_pretrain_ckpt_path'] and not resume_fullpath:
             model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'],
                                       'model/')
+            logging.info('The vgg weights loaded from {}.'.format(options['vgg_pretrain_ckpt_path']))
         trainer.train(sess)

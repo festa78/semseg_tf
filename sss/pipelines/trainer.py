@@ -3,6 +3,7 @@
 
 import logging
 logging.basicConfig(level=logging.INFO)
+import os
 import time
 
 import tensorflow as tf
@@ -41,9 +42,8 @@ class Trainer:
     global_step: tf.Variable
         A global step value to use with optimizer and
         logging purpose.
-    logdir: str
-        A path to the directory to save a summary to
-        visualize on TensorBoard.
+    save_dir: str
+        A path to the directory to save logs and models.
     train_class_weights: 1d tf.Tensor, default None
         Weights to train losses over classes.
         This array will be used as the parameter of @p loss_fn.
@@ -59,21 +59,26 @@ class Trainer:
     evaluate_freq: int, default: 10
         Evaluate model by validation dataset and compute metrics
         every @p evaluate_freq epochs.
+    resume_path: str, default: None
+        The path to resume session from.
     """
 
-    def __init__(self,
-                 model,
-                 num_classes,
-                 train_iterator,
-                 val_iterator,
-                 loss_fn,
-                 optimizer,
-                 global_step,
-                 logdir,
-                 train_class_weights=None,
-                 val_class_weights=None,
-                 num_epochs=200,
-                 evaluate_freq=10):
+    def __init__(
+            self,
+            model,
+            num_classes,
+            train_iterator,
+            val_iterator,
+            loss_fn,
+            optimizer,
+            global_step,
+            save_dir,
+            train_class_weights=None,
+            val_class_weights=None,
+            num_epochs=200,
+            evaluate_freq=10,
+            resume_path=None,
+    ):
         self.logger = logging.getLogger(__name__)
         self.model = model
         self.num_classes = num_classes
@@ -88,9 +93,10 @@ class Trainer:
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.global_step = global_step
-        self.logdir = logdir
+        self.save_dir = save_dir
         self.num_epochs = num_epochs
         self.evaluate_freq = evaluate_freq
+        self.resume_path = resume_path
 
         # Inspect inputs.
         if hasattr(model, 'forward') is False:
@@ -102,6 +108,7 @@ class Trainer:
             raise AttributeError(
                 'val_batch object should have "image" and "label" keys')
 
+        # Set up metrics.
         self.train_class_weights, \
             self.train_loss, \
             self.train_image_summary, \
@@ -132,6 +139,21 @@ class Trainer:
             self.train_loss,
             var_list=tf.trainable_variables(scope='model'),
             global_step=self.global_step)
+
+        # Epoch ops and a savor should live in cpu.
+        with tf.device('/cpu'):
+            # In the training loop, it will increment epoch first.
+            # So set -1 as the initial value to start from 0.
+            self.epoch = tf.Variable(-1, name='epoch', trainable=False)
+            self.increment_epoch_op = tf.assign(self.epoch, self.epoch + 1)
+            self.epoch_less_than_max = tf.less(self.epoch,
+                                               tf.constant(self.num_epochs))
+            self.saver = tf.train.Saver()
+
+        self.log_dir = os.path.join(self.save_dir, 'logs')
+        self.ckpt_dir = os.path.join(self.save_dir, 'ckpts')
+        os.makedirs(self.log_dir)
+        os.makedirs(self.ckpt_dir)
 
     def compute_metrics(self, mode, image, label, class_weights):
         with tf.variable_scope('model'):
@@ -224,9 +246,17 @@ class Trainer:
         sess: tf.Session
             TensorFlow session to run train loop.
         """
+        if self.resume_path:
+            self.saver.restore(sess, self.resume_path)
+            self.logger.info('The session restored from {}.'.format(
+                self.resume_path))
+
         self.logger.info('Start training.')
-        summary_writer = tf.summary.FileWriter(self.logdir, sess.graph)
-        for ep in range(self.num_epochs):
+        summary_writer = tf.summary.FileWriter(self.log_dir, sess.graph)
+        while sess.run(self.epoch_less_than_max):
+            sess.run(self.increment_epoch_op)
+            ep = sess.run(self.epoch)
+
             sess.run((self.train_iterator.initializer,
                       self.train_metric_reset_op))
             if (ep + 1) % self.evaluate_freq == 0:
@@ -257,6 +287,14 @@ class Trainer:
                         train_mloss, train_miou))
                 summary_writer.add_summary(train_step_summary, ep)
                 summary_writer.add_summary(train_epoch_summary, ep)
+
+                with tf.device('/cpu'):
+                    save_path = 'model_{:08d}.ckpt'.format(ep)
+                    self.saver.save(sess, os.path.join(self.ckpt_dir,
+                                                       save_path))
+                    self.logger.info(
+                        'The session saved at {}'.format(save_path))
+
                 self.validate(sess, summary_writer, ep)
 
     def validate(self, sess, summary_writer, epoch):
