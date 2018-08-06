@@ -1,7 +1,7 @@
 # Parameters for FCN training on Cityscapes dataset.
 
 # The batch size on training.
-batch_size: 4
+batch_size: 8
 # The height of resized image for train.
 train_resized_height: 512
 # The width of resized image for train.

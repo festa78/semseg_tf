@@ -28,54 +28,70 @@ class FCN:
         self.outsizes = OrderedDict()
 
         # Prepare layers.
+        # TODO: 100 padding.
         self.conv1_1 = self._make_conv2d(
             out_channels=64, kernel_size=3, name='conv1/conv1_1')
+        self.relu1_1 = self._make_relu(name='relu1/relu1_1')
         self.conv1_2 = self._make_conv2d(
             out_channels=64, kernel_size=3, name='conv1/conv1_2')
+        self.relu1_2 = self._make_relu(name='relu1/relu1_2')
         self.pool1 = self._make_max_pool2d(
             kernel_size=2, stride=2, name='pool1')
 
         self.conv2_1 = self._make_conv2d(
             out_channels=128, kernel_size=3, name='conv2/conv2_1')
+        self.relu2_1 = self._make_relu(name='relu2/relu2_1')
         self.conv2_2 = self._make_conv2d(
             out_channels=128, kernel_size=3, name='conv2/conv2_2')
+        self.relu2_2 = self._make_relu(name='relu2/relu2_2')
         self.pool2 = self._make_max_pool2d(
             kernel_size=2, stride=2, name='pool2')
 
         self.conv3_1 = self._make_conv2d(
             out_channels=256, kernel_size=3, name='conv3/conv3_1')
+        self.relu3_1 = self._make_relu(name='relu3/relu3_1')
         self.conv3_2 = self._make_conv2d(
             out_channels=256, kernel_size=3, name='conv3/conv3_2')
+        self.relu3_2 = self._make_relu(name='relu3/relu3_2')
         self.conv3_3 = self._make_conv2d(
             out_channels=256, kernel_size=3, name='conv3/conv3_3')
+        self.relu3_3 = self._make_relu(name='relu3/relu3_3')
         self.pool3 = self._make_max_pool2d(
             kernel_size=2, stride=2, name='pool3')
 
         self.conv4_1 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv4/conv4_1')
+        self.relu4_1 = self._make_relu(name='relu4/relu4_1')
         self.conv4_2 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv4/conv4_2')
+        self.relu4_2 = self._make_relu(name='relu4/relu4_2')
         self.conv4_3 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv4/conv4_3')
+        self.relu4_3 = self._make_relu(name='relu4/relu4_3')
         self.pool4 = self._make_max_pool2d(
             kernel_size=2, stride=2, name='pool4')
 
         self.conv5_1 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv5/conv5_1')
+        self.relu5_1 = self._make_relu(name='relu5/relu5_1')
         self.conv5_2 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv5/conv5_2')
+        self.relu5_2 = self._make_relu(name='relu5/relu5_2')
         self.conv5_3 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv5/conv5_3')
+        self.relu5_3 = self._make_relu(name='relu5/relu5_3')
         self.pool5 = self._make_max_pool2d(
             kernel_size=2, stride=2, name='pool5')
 
         # Use conv2d instead of fc.
         self.fc6 = self._make_conv2d(
             out_channels=4096, kernel_size=7, name='fc6')
+        self.relu6 = self._make_relu(name='relu6')
         self.dropout6 = self._make_dropout(keep_prob=.5, name='dropout6')
 
         self.fc7 = self._make_conv2d(
             out_channels=4096, kernel_size=1, name='fc7')
+        self.relu7 = self._make_relu(name='relu7')
         self.dropout7 = self._make_dropout(keep_prob=.5, name='dropout7')
 
         self.score_fr = self._make_conv2d(
@@ -166,6 +182,16 @@ class FCN:
 
         return max_pool2d
 
+    def _make_relu(self, name):
+
+        def relu(in_featuers):
+            with tf.variable_scope(name):
+                rl = tf.nn.relu(in_featuers)
+            self.outsizes[name] = tf.shape(rl)
+            return rl
+
+        return relu
+
     def _make_dropout(self, keep_prob, name):
 
         def dropout(in_features):
@@ -249,38 +275,53 @@ class FCN:
         with tf.variable_scope('fcn', reuse=tf.AUTO_REUSE):
             x_size = tf.shape(x)
             out = self.conv1_1(x)
+            out = self.relu1_1(out)
             out = self.conv1_2(out)
+            out = self.relu1_2(out)
             out = self.pool1(out)
 
             out = self.conv2_1(out)
+            out = self.relu2_1(out)
             out = self.conv2_2(out)
+            out = self.relu2_2(out)
             out = self.pool2(out)
 
             out = self.conv3_1(out)
+            out = self.relu3_1(out)
             out = self.conv3_2(out)
+            out = self.relu3_2(out)
             out = self.conv3_3(out)
+            out = self.relu3_3(out)
             out = self.pool3(out)
 
             if self.mode == 'fcn8':
                 pool3 = out
 
             out = self.conv4_1(out)
+            out = self.relu4_1(out)
             out = self.conv4_2(out)
+            out = self.relu4_2(out)
             out = self.conv4_3(out)
+            out = self.relu4_3(out)
             out = self.pool4(out)
 
             if self.mode in ('fcn16', 'fcn8'):
                 pool4 = out
 
             out = self.conv5_1(out)
+            out = self.relu5_1(out)
             out = self.conv5_2(out)
+            out = self.relu5_2(out)
             out = self.conv5_3(out)
+            out = self.relu5_3(out)
             out = self.pool5(out)
 
             out = self.fc6(out)
+            out = self.relu6(out)
             out = self.dropout6(out)
 
             out = self.fc7(out)
+            out = self.relu7(out)
             out = self.dropout7(out)
 
             out = self.score_fr(out)

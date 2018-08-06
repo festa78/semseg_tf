@@ -128,8 +128,8 @@ def test_compute_metrics(tmpdir):
             ))
 
             # After update.
-            np.testing.assert_almost_equal(train_mloss, 197468720.0)
-            np.testing.assert_almost_equal(train_miou, 0.0144112725)
+            np.testing.assert_almost_equal(train_mloss, 414665.3125)
+            np.testing.assert_almost_equal(train_miou, 0.05410555)
 
 
 def test_compute_class_weights(tmpdir):

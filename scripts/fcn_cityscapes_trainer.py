@@ -156,14 +156,14 @@ if __name__ == '__main__':
 
         # XXX get proper parameters.
         learning_rate = tf.train.polynomial_decay(
-            learning_rate=0.001,
+            learning_rate=1.e-2,
             global_step=global_step,
-            decay_steps=10000,
-            end_learning_rate=0.000001,
+            decay_steps=100000,
+            end_learning_rate=1.e-6,
             power=0.9)
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        # optimizer = tf.train.GradientDescentOptimizer(
-        #     learning_rate=learning_rate)
+        # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        optimizer = tf.train.GradientDescentOptimizer(
+            learning_rate=learning_rate)
 
         trainer = Trainer(
             model=model,
@@ -186,5 +186,6 @@ if __name__ == '__main__':
         if options['vgg_pretrain_ckpt_path'] and not resume_fullpath:
             model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'],
                                       'model/')
-            logging.info('The vgg weights loaded from {}.'.format(options['vgg_pretrain_ckpt_path']))
+            logging.info('The vgg weights loaded from {}.'.format(
+                options['vgg_pretrain_ckpt_path']))
         trainer.train(sess)

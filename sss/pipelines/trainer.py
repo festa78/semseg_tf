@@ -113,8 +113,7 @@ class Trainer:
                 'val_batch object should have "image" and "label" keys')
 
         # Set up metrics.
-        self.predictions, \
-            self.train_class_weights, \
+        self.train_class_weights, \
             self.train_loss, \
             self.train_image_summary, \
             self.train_mean_loss, \
@@ -127,7 +126,7 @@ class Trainer:
                 'train', self.train_batch['image'], self.train_batch['label'], train_class_weights
                 )
 
-        _, self.val_class_weights, \
+        self.val_class_weights, \
             self.val_loss, \
             self.val_image_summary, \
             self.val_mean_loss, \
@@ -207,7 +206,7 @@ class Trainer:
             step_summary_op = tf.summary.merge(step_summaries)
             epoch_summary_op = tf.summary.merge(epoch_summaries)
 
-        return predictions, class_weights_tensor, loss, image_summary, mean_loss, mean_loss_update_op, \
+        return class_weights_tensor, loss, image_summary, mean_loss, mean_loss_update_op, \
             mean_iou, mean_iou_update_op, metric_reset_op, \
             step_summary_op, epoch_summary_op
 
