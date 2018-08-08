@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -B
-"""The script to train cityscapes data by a fully convolutional network (aka FCN).
+"""The script to train cityscapes data by a dilated network.
 """
 
 import argparse
@@ -17,7 +17,7 @@ import project_root
 from sss.data.cityscapes import id2trainid_tensor, trainid2color_tensor
 from sss.data.data_preprocessor import DataPreprocessor
 from sss.data.tfrecord import read_tfrecord
-from sss.models.fcn import fcn8, fcn16, fcn32
+from sss.models.dilation_net import dilation7, dilation8, dilation10
 from sss.pipelines.trainer import Trainer
 from sss.utils.image_processing import random_crop_image_and_label, \
     random_flip_left_right_image_and_label, resize_image_and_label
@@ -25,8 +25,7 @@ from sss.utils.losses import cross_entropy
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description=
-        "The script to train cityscapes data by a fully convolutional network (aka FCN)."
+        description="The script to train cityscapes data by the dilated network."
     )
     parser.add_argument(
         'params_yaml',
@@ -152,14 +151,14 @@ if __name__ == '__main__':
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
     with tf.device('/gpu:0'):
-        model = fcn8(options['num_classes'])
+        model = dilation10(options['num_classes'])
 
         # XXX get proper parameters.
         learning_rate = tf.train.polynomial_decay(
-            learning_rate=.02,
+            learning_rate=.002,
             global_step=global_step,
             decay_steps=100000,
-            end_learning_rate=.0002,
+            end_learning_rate=.00002,
             power=0.9)
         # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         optimizer = tf.train.GradientDescentOptimizer(

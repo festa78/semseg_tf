@@ -6,19 +6,19 @@ import tensorflow as tf
 
 import project_root
 
-from sss.models.fcn import fcn32, fcn16, fcn8
+from sss.models.dilation_net import dilation7, dilation8, dilation10
 from sss.utils.losses import cross_entropy
 
 
-def test_fcn_init():
-    """Test FCN class initialization.
+def test_dilation_init():
+    """Test DilationNet class initialization.
     """
     NUM_CLASSES = 5
     CKPT_PATH = 'dummy'
 
     with tf.Graph().as_default():
         # Check methods constructed in __init__().
-        dut = fcn32(NUM_CLASSES)
+        dut = dilation7(NUM_CLASSES)
         assert dut.logger is not None
         assert dut.num_classes == NUM_CLASSES
         assert hasattr(dut, 'conv1_1')
@@ -44,72 +44,107 @@ def test_fcn_init():
         assert hasattr(dut, 'relu4_2')
         assert hasattr(dut, 'conv4_3')
         assert hasattr(dut, 'relu4_3')
-        assert hasattr(dut, 'pool4')
         assert hasattr(dut, 'conv5_1')
         assert hasattr(dut, 'relu5_1')
         assert hasattr(dut, 'conv5_2')
         assert hasattr(dut, 'relu5_2')
         assert hasattr(dut, 'conv5_3')
         assert hasattr(dut, 'relu5_3')
-        assert hasattr(dut, 'pool5')
         assert hasattr(dut, 'fc6')
         assert hasattr(dut, 'relu6')
         assert hasattr(dut, 'dropout6')
         assert hasattr(dut, 'fc7')
         assert hasattr(dut, 'relu7')
         assert hasattr(dut, 'dropout7')
-        assert hasattr(dut, 'score_fr')
-        assert hasattr(dut, 'upscore32')
-        assert not hasattr(dut, 'upscore16')
-        assert not hasattr(dut, 'upscore8')
-        assert not hasattr(dut, 'upscore2')
-        assert not hasattr(dut, 'score_pool4')
-        assert not hasattr(dut, 'score_pool3')
+        assert hasattr(dut, 'final')
+        assert hasattr(dut, 'ctx_conv1_1')
+        assert hasattr(dut, 'ctx_relu1_1')
+        assert hasattr(dut, 'ctx_conv1_2')
+        assert hasattr(dut, 'ctx_relu1_2')
+        assert hasattr(dut, 'ctx_conv2_1')
+        assert hasattr(dut, 'ctx_relu2_1')
+        assert hasattr(dut, 'ctx_conv3_1')
+        assert hasattr(dut, 'ctx_relu3_1')
+        assert hasattr(dut, 'ctx_conv4_1')
+        assert hasattr(dut, 'ctx_relu4_1')
+        assert hasattr(dut, 'ctx_fc1')
+        assert hasattr(dut, 'ctx_fc1_relu')
+        assert hasattr(dut, 'ctx_final')
 
-        dut = fcn16(NUM_CLASSES)
-        assert not hasattr(dut, 'upscore32')
-        assert hasattr(dut, 'upscore16')
-        assert not hasattr(dut, 'upscore8')
-        assert hasattr(dut, 'upscore2')
-        assert hasattr(dut, 'score_pool4')
-        assert not hasattr(dut, 'score_pool3')
+        dut = dilation8(NUM_CLASSES)
+        assert hasattr(dut, 'ctx_conv5_1')
+        assert hasattr(dut, 'ctx_relu5_1')
 
-        dut = fcn8(NUM_CLASSES)
-        assert not hasattr(dut, 'upscore32')
-        assert not hasattr(dut, 'upscore16')
-        assert hasattr(dut, 'upscore8')
-        assert hasattr(dut, 'upscore2')
-        assert hasattr(dut, 'score_pool4')
-        assert hasattr(dut, 'score_pool3')
+        dut = dilation10(NUM_CLASSES)
+        assert hasattr(dut, 'ctx_conv6_1')
+        assert hasattr(dut, 'ctx_relu6_1')
+        assert hasattr(dut, 'ctx_conv7_1')
+        assert hasattr(dut, 'ctx_relu7_1')
+        assert hasattr(dut, 'ctx_upsample')
 
 
-def test_fcn_architecture():
-    """Test the architecture of FCN.
+def test_dilation_architecture():
+    """Test the architecture of DilationNet.
     """
     IMAGE_SIZE = 224
     NUM_CLASSES = 5
     GT_VAR_LIST = sorted([
-        "fcn/conv1/conv1_1/weights:0", "fcn/conv1/conv1_1/biases:0",
-        "fcn/conv1/conv1_2/weights:0", "fcn/conv1/conv1_2/biases:0",
-        "fcn/conv2/conv2_1/weights:0", "fcn/conv2/conv2_1/biases:0",
-        "fcn/conv2/conv2_2/weights:0", "fcn/conv2/conv2_2/biases:0",
-        "fcn/conv3/conv3_1/weights:0", "fcn/conv3/conv3_1/biases:0",
-        "fcn/conv3/conv3_2/weights:0", "fcn/conv3/conv3_2/biases:0",
-        "fcn/conv3/conv3_3/weights:0", "fcn/conv3/conv3_3/biases:0",
-        "fcn/conv4/conv4_1/weights:0", "fcn/conv4/conv4_1/biases:0",
-        "fcn/conv4/conv4_2/weights:0", "fcn/conv4/conv4_2/biases:0",
-        "fcn/conv4/conv4_3/weights:0", "fcn/conv4/conv4_3/biases:0",
-        "fcn/conv5/conv5_1/weights:0", "fcn/conv5/conv5_1/biases:0",
-        "fcn/conv5/conv5_2/weights:0", "fcn/conv5/conv5_2/biases:0",
-        "fcn/conv5/conv5_3/weights:0", "fcn/conv5/conv5_3/biases:0",
-        "fcn/fc6/weights:0", "fcn/fc6/biases:0", "fcn/fc7/weights:0",
-        "fcn/fc7/biases:0", "fcn/score_fr/weights:0", "fcn/score_fr/biases:0",
-        "fcn/score_pool3/weights:0", "fcn/score_pool3/biases:0",
-        "fcn/score_pool4/weights:0", "fcn/score_pool4/biases:0"
+        "dilation/conv1/conv1_1/weights:0",
+        "dilation/conv1/conv1_1/biases:0",
+        "dilation/conv1/conv1_2/weights:0",
+        "dilation/conv1/conv1_2/biases:0",
+        "dilation/conv2/conv2_1/weights:0",
+        "dilation/conv2/conv2_1/biases:0",
+        "dilation/conv2/conv2_2/weights:0",
+        "dilation/conv2/conv2_2/biases:0",
+        "dilation/conv3/conv3_1/weights:0",
+        "dilation/conv3/conv3_1/biases:0",
+        "dilation/conv3/conv3_2/weights:0",
+        "dilation/conv3/conv3_2/biases:0",
+        "dilation/conv3/conv3_3/weights:0",
+        "dilation/conv3/conv3_3/biases:0",
+        "dilation/conv4/conv4_1/weights:0",
+        "dilation/conv4/conv4_1/biases:0",
+        "dilation/conv4/conv4_2/weights:0",
+        "dilation/conv4/conv4_2/biases:0",
+        "dilation/conv4/conv4_3/weights:0",
+        "dilation/conv4/conv4_3/biases:0",
+        "dilation/conv5/conv5_1/weights:0",
+        "dilation/conv5/conv5_1/biases:0",
+        "dilation/conv5/conv5_2/weights:0",
+        "dilation/conv5/conv5_2/biases:0",
+        "dilation/conv5/conv5_3/weights:0",
+        "dilation/conv5/conv5_3/biases:0",
+        "dilation/fc6/weights:0",
+        "dilation/fc6/biases:0",
+        "dilation/fc7/weights:0",
+        "dilation/fc7/biases:0",
+        "dilation/final/weights:0",
+        "dilation/final/biases:0",
+        "dilation/ctx_conv1/ctx_conv1_1/weights:0",
+        "dilation/ctx_conv1/ctx_conv1_1/biases:0",
+        "dilation/ctx_conv1/ctx_conv1_2/weights:0",
+        "dilation/ctx_conv1/ctx_conv1_2/biases:0",
+        "dilation/ctx_conv2/ctx_conv2_1/weights:0",
+        "dilation/ctx_conv2/ctx_conv2_1/biases:0",
+        "dilation/ctx_conv3/ctx_conv3_1/weights:0",
+        "dilation/ctx_conv3/ctx_conv3_1/biases:0",
+        "dilation/ctx_conv4/ctx_conv4_1/weights:0",
+        "dilation/ctx_conv4/ctx_conv4_1/biases:0",
+        "dilation/ctx_conv5/ctx_conv5_1/weights:0",
+        "dilation/ctx_conv5/ctx_conv5_1/biases:0",
+        "dilation/ctx_conv6/ctx_conv6_1/weights:0",
+        "dilation/ctx_conv6/ctx_conv6_1/biases:0",
+        "dilation/ctx_conv7/ctx_conv7_1/weights:0",
+        "dilation/ctx_conv7/ctx_conv7_1/biases:0",
+        "dilation/ctx_fc1/weights:0",
+        "dilation/ctx_fc1/biases:0",
+        "dilation/ctx_final/weights:0",
+        "dilation/ctx_final/biases:0",
     ])
 
     with tf.Graph().as_default():
-        dut = fcn8(NUM_CLASSES)
+        dut = dilation10(NUM_CLASSES)
         dummy_in = tf.placeholder(tf.float32, (None, IMAGE_SIZE, IMAGE_SIZE, 3))
         dut.forward(dummy_in)
         var_list = tf.get_collection(key=tf.GraphKeys.TRAINABLE_VARIABLES)
@@ -117,14 +152,13 @@ def test_fcn_architecture():
         assert var_list == GT_VAR_LIST
 
 
-def test_fcn_update():
-    """Test FCN surely updates the parameters.
-    TODO: test not only FCN but all networks at once.
+def test_dilation_update():
+    """Test DilationNet surely updates the parameters.
     cf. https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765
     """
     IMAGE_SIZE = 224
     NUM_CLASSES = 5
-    MODELS = (fcn32, fcn16, fcn8)
+    MODELS = (dilation7, dilation8, dilation10)
 
     for model in MODELS:
         with tf.Graph().as_default():

@@ -7,20 +7,20 @@ from tensorflow.contrib.slim.python.slim.nets import vgg
 import tensorflow as tf
 
 
-class FCN:
-    """Fully convolutional network (FCN) implementation.
-    cf. https://arxiv.org/abs/1411.4038
+class DilationNet:
+    """Multi-scale context aggregation by dilated convolutions.
+    cf. https://arxiv.org/abs/1511.07122
 
     Parameters
     ----------
     num_classes: int
         The number of output classes.
     mode: str
-        Which model architecture to use from fcn32, fcn16, and fcn8.
+        Which model architecture to use from dilation7, dilation8, and dilation10.
     """
-    MODES = ('fcn32', 'fcn16', 'fcn8')
+    MODES = ('dilation7', 'dilation8', 'dilation10')
 
-    def __init__(self, num_classes, mode='fcn32'):
+    def __init__(self, num_classes, mode='dilation10'):
         assert mode in self.MODES
         self.logger = logging.getLogger(__name__)
         self.num_classes = num_classes
@@ -28,7 +28,6 @@ class FCN:
         self.outsizes = OrderedDict()
 
         # Prepare layers.
-        # TODO: 100 padding.
         self.conv1_1 = self._make_conv2d(
             out_channels=64, kernel_size=3, name='conv1/conv1_1')
         self.relu1_1 = self._make_relu(name='relu1/relu1_1')
@@ -68,24 +67,29 @@ class FCN:
         self.conv4_3 = self._make_conv2d(
             out_channels=512, kernel_size=3, name='conv4/conv4_3')
         self.relu4_3 = self._make_relu(name='relu4/relu4_3')
-        self.pool4 = self._make_max_pool2d(
-            kernel_size=2, stride=2, name='pool4')
 
-        self.conv5_1 = self._make_conv2d(
-            out_channels=512, kernel_size=3, name='conv5/conv5_1')
+        self.conv5_1 = self._make_atrous_conv2d(
+            out_channels=512,
+            kernel_size=3,
+            atrous_rate=2,
+            name='conv5/conv5_1')
         self.relu5_1 = self._make_relu(name='relu5/relu5_1')
-        self.conv5_2 = self._make_conv2d(
-            out_channels=512, kernel_size=3, name='conv5/conv5_2')
+        self.conv5_2 = self._make_atrous_conv2d(
+            out_channels=512,
+            kernel_size=3,
+            atrous_rate=2,
+            name='conv5/conv5_2')
         self.relu5_2 = self._make_relu(name='relu5/relu5_2')
-        self.conv5_3 = self._make_conv2d(
-            out_channels=512, kernel_size=3, name='conv5/conv5_3')
+        self.conv5_3 = self._make_atrous_conv2d(
+            out_channels=512,
+            kernel_size=3,
+            atrous_rate=2,
+            name='conv5/conv5_3')
         self.relu5_3 = self._make_relu(name='relu5/relu5_3')
-        self.pool5 = self._make_max_pool2d(
-            kernel_size=2, stride=2, name='pool5')
 
         # Use conv2d instead of fc.
-        self.fc6 = self._make_conv2d(
-            out_channels=4096, kernel_size=7, name='fc6')
+        self.fc6 = self._make_atrous_conv2d(
+            out_channels=4096, kernel_size=7, atrous_rate=4, name='fc6')
         self.relu6 = self._make_relu(name='relu6')
         self.dropout6 = self._make_dropout(keep_prob=.5, name='dropout6')
 
@@ -94,51 +98,77 @@ class FCN:
         self.relu7 = self._make_relu(name='relu7')
         self.dropout7 = self._make_dropout(keep_prob=.5, name='dropout7')
 
-        self.score_fr = self._make_conv2d(
-            out_channels=self.num_classes, kernel_size=1, name='score_fr')
+        self.final = self._make_conv2d(
+            out_channels=num_classes, kernel_size=1, name='final')
 
-        if self.mode == 'fcn32':
-            self.upscore32 = self._make_upscore(
-                out_channels=self.num_classes,
-                kernel_size=64,
-                stride=32,
-                name='upscore32')
+        # TODO: needs manual padding?
+        self.ctx_conv1_1 = self._make_conv2d(
+            out_channels=num_classes,
+            kernel_size=3,
+            name='ctx_conv1/ctx_conv1_1')
+        self.ctx_relu1_1 = self._make_relu(name='ctx_relu1/ctx_relu1_1')
+        self.ctx_conv1_2 = self._make_conv2d(
+            out_channels=num_classes,
+            kernel_size=3,
+            name='ctx_conv1/ctx_conv1_2')
+        self.ctx_relu1_2 = self._make_relu(name='ctx_relu1/ctx_relu1_2')
 
-        if self.mode in ('fcn16', 'fcn8'):
-            self.upscore2 = self._make_upscore(
-                out_channels=self.num_classes,
-                kernel_size=4,
-                stride=2,
-                name='upscore2')
+        self.ctx_conv2_1 = self._make_atrous_conv2d(
+            out_channels=num_classes,
+            kernel_size=3,
+            atrous_rate=2,
+            name='ctx_conv2/ctx_conv2_1')
+        self.ctx_relu2_1 = self._make_relu(name='ctx_relu1/ctx_relu2_1')
 
-            self.score_pool4 = self._make_conv2d(
-                out_channels=self.num_classes,
-                kernel_size=1,
-                name='score_pool4')
+        self.ctx_conv3_1 = self._make_atrous_conv2d(
+            out_channels=num_classes,
+            kernel_size=3,
+            atrous_rate=4,
+            name='ctx_conv3/ctx_conv3_1')
+        self.ctx_relu3_1 = self._make_relu(name='ctx_relu1/ctx_relu3_1')
 
-            if self.mode == 'fcn16':
-                self.upscore16 = self._make_upscore(
-                    out_channels=self.num_classes,
-                    kernel_size=32,
-                    stride=16,
-                    name='upscore16')
-            else:
-                self.upscore_pool4 = self._make_upscore(
-                    out_channels=self.num_classes,
-                    kernel_size=4,
-                    stride=2,
-                    name='upscore_pool4')
+        self.ctx_conv4_1 = self._make_atrous_conv2d(
+            out_channels=num_classes,
+            kernel_size=3,
+            atrous_rate=8,
+            name='ctx_conv4/ctx_conv4_1')
+        self.ctx_relu4_1 = self._make_relu(name='ctx_relu1/ctx_relu4_1')
 
-                self.upscore8 = self._make_upscore(
-                    out_channels=self.num_classes,
-                    kernel_size=16,
-                    stride=8,
-                    name='upscore8')
+        if self.mode in ('dilation8', 'dilation10'):
+            self.ctx_conv5_1 = self._make_atrous_conv2d(
+                out_channels=num_classes,
+                kernel_size=3,
+                atrous_rate=16,
+                name='ctx_conv5/ctx_conv5_1')
+            self.ctx_relu5_1 = self._make_relu(name='ctx_relu1/ctx_relu5_1')
 
-                self.score_pool3 = self._make_conv2d(
-                    out_channels=self.num_classes,
-                    kernel_size=1,
-                    name='score_pool3')
+            if self.mode == 'dilation10':
+                self.ctx_conv6_1 = self._make_atrous_conv2d(
+                    out_channels=num_classes,
+                    kernel_size=3,
+                    atrous_rate=32,
+                    name='ctx_conv6/ctx_conv6_1')
+                self.ctx_relu6_1 = self._make_relu(name='ctx_relu1/ctx_relu6_1')
+
+                self.ctx_conv7_1 = self._make_atrous_conv2d(
+                    out_channels=num_classes,
+                    kernel_size=3,
+                    atrous_rate=64,
+                    name='ctx_conv7/ctx_conv7_1')
+                self.ctx_relu7_1 = self._make_relu(name='ctx_relu1/ctx_relu7_1')
+
+        self.ctx_fc1 = self._make_conv2d(
+            out_channels=num_classes, kernel_size=3, name='ctx_fc1')
+        self.ctx_fc1_relu = self._make_relu(name='ctx_fc1_relu')
+        self.ctx_final = self._make_conv2d(
+            out_channels=num_classes, kernel_size=1, name='ctx_final')
+
+        # TODO: should not upsample for diltaion7 and dilation8?
+        self.ctx_upsample = self._make_upscore(
+            out_channels=self.num_classes,
+            kernel_size=16,
+            stride=8,
+            name='ctx_upsample')
 
     def _make_conv_weights(self, shape, std):
         init_op = tf.truncated_normal_initializer(stddev=std)
@@ -169,6 +199,27 @@ class FCN:
 
         return conv2d
 
+    def _make_atrous_conv2d(self, out_channels, kernel_size, atrous_rate, name):
+
+        def atrous_conv2d(in_features):
+            with tf.variable_scope(name):
+                in_channels = in_features.get_shape()[3].value
+                # He initialization.
+                std = (2. / in_channels)**.5
+                weights_shape = [
+                    kernel_size, kernel_size, in_channels, out_channels
+                ]
+                weights = self._make_conv_weights(weights_shape, std)
+                biases = self._make_conv_biases(out_channels, 0.)
+
+                conv = tf.nn.atrous_conv2d(
+                    in_features, weights, atrous_rate, padding='SAME')
+                conv = tf.nn.bias_add(conv, biases)
+            self.outsizes[name] = tf.shape(conv)
+            return conv
+
+        return atrous_conv2d
+
     def _make_max_pool2d(self, kernel_size, stride, name):
         kernel_sizes = [1, kernel_size, kernel_size, 1]
         strides = [1, stride, stride, 1]
@@ -184,9 +235,9 @@ class FCN:
 
     def _make_relu(self, name):
 
-        def relu(in_featuers):
+        def relu(in_features):
             with tf.variable_scope(name):
-                rl = tf.nn.relu(in_featuers)
+                rl = tf.nn.relu(in_features)
             self.outsizes[name] = tf.shape(rl)
             return rl
 
@@ -252,10 +303,11 @@ class FCN:
         # Make the dictionary to correspond variables between fcn and vgg.
         var_list = {}
         var_model = tf.get_collection(
-            key=tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_prefix + 'fcn')
+            key=tf.GraphKeys.TRAINABLE_VARIABLES,
+            scope=scope_prefix + 'dilation')
         for var in var_model:
-            if 'score' not in var.name:
-                var_list[var.name.replace(scope_prefix + 'fcn',
+            if 'final' not in var.name and 'ctx' not in var.name:
+                var_list[var.name.replace(scope_prefix + 'dilation',
                                           'vgg_16')[:-2]] = var
         vgg_saver = tf.train.Saver(var_list=var_list)
         vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
@@ -272,7 +324,7 @@ class FCN:
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        with tf.variable_scope('fcn', reuse=tf.AUTO_REUSE):
+        with tf.variable_scope('dilation', reuse=tf.AUTO_REUSE):
             x_size = tf.shape(x)
             out = self.conv1_1(x)
             out = self.relu1_1(out)
@@ -294,19 +346,12 @@ class FCN:
             out = self.relu3_3(out)
             out = self.pool3(out)
 
-            if self.mode == 'fcn8':
-                pool3 = out
-
             out = self.conv4_1(out)
             out = self.relu4_1(out)
             out = self.conv4_2(out)
             out = self.relu4_2(out)
             out = self.conv4_3(out)
             out = self.relu4_3(out)
-            out = self.pool4(out)
-
-            if self.mode in ('fcn16', 'fcn8'):
-                pool4 = out
 
             out = self.conv5_1(out)
             out = self.relu5_1(out)
@@ -314,7 +359,6 @@ class FCN:
             out = self.relu5_2(out)
             out = self.conv5_3(out)
             out = self.relu5_3(out)
-            out = self.pool5(out)
 
             out = self.fc6(out)
             out = self.relu6(out)
@@ -324,34 +368,50 @@ class FCN:
             out = self.relu7(out)
             out = self.dropout7(out)
 
-            out = self.score_fr(out)
+            out = self.final(out)
 
-            if self.mode == 'fcn32':
-                out = self.upscore32(out, x_size)
-                return out
+            out = self.ctx_conv1_1(out)
+            out = self.ctx_relu1_1(out)
+            out = self.ctx_conv1_2(out)
+            out = self.ctx_relu1_2(out)
 
-            if self.mode in ('fcn16', 'fcn8'):
-                out2 = self.score_pool4(pool4 * 0.01)
-                out = self.upscore2(out, tf.shape(out2))
-                out = tf.add(out, out2)
-                if self.mode == 'fcn8':
-                    out2 = self.score_pool3(pool3 * 0.0001)
-                    out = self.upscore_pool4(out, tf.shape(out2))
-                    out = tf.add(out, out2)
-                    out = self.upscore8(out, x_size)
-                    return out
+            out = self.ctx_conv2_1(out)
+            out = self.ctx_relu2_1(out)
 
-                out = self.upscore16(out, x_size)
-                return out
+            out = self.ctx_conv3_1(out)
+            out = self.ctx_relu3_1(out)
+
+            out = self.ctx_conv4_1(out)
+            out = self.ctx_relu4_1(out)
+
+            if self.mode in ('dilation8', 'dilation10'):
+                out = self.ctx_conv5_1(out)
+                out = self.ctx_relu5_1(out)
+
+                if self.mode == 'dilation10':
+                    out = self.ctx_conv6_1(out)
+                    out = self.ctx_relu6_1(out)
+
+                    out = self.ctx_conv7_1(out)
+                    out = self.ctx_relu7_1(out)
+
+            out = self.ctx_fc1(out)
+            out = self.ctx_fc1_relu(out)
+
+            out = self.ctx_final(out)
+
+            out = self.ctx_upsample(out, x_size)
+
+        return out
 
 
-def fcn32(num_classes):
-    return FCN(num_classes, 'fcn32')
+def dilation7(num_classes):
+    return DilationNet(num_classes, 'dilation7')
 
 
-def fcn16(num_classes):
-    return FCN(num_classes, 'fcn16')
+def dilation8(num_classes):
+    return DilationNet(num_classes, 'dilation8')
 
 
-def fcn8(num_classes):
-    return FCN(num_classes, 'fcn8')
+def dilation10(num_classes):
+    return DilationNet(num_classes, 'dilation10')
