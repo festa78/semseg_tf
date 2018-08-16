@@ -89,7 +89,7 @@ def test_id2trainid_tensor():
         # Checks output size is correct.
         assert trainid.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 1)
         # Checks id is correctly converted to trainId.
-        assert trainid[0, 0, 0] == 2
+        assert trainid[0, 0, 0] == 1
 
 
 def test_trainid2color_tensor():
@@ -108,4 +108,4 @@ def test_trainid2color_tensor():
         # Checks output size is correct.
         assert color.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 3)
         # Checks trainId is correctly converted to color.
-        assert np.all(color[0, 0, :] == np.array((244, 35, 232)))
+        assert np.all(color[0, 0, :] == np.array((70, 70, 70)))

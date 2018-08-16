@@ -123,7 +123,7 @@ class Trainer:
             self.train_metric_reset_op, \
             self.train_step_summary_op, \
             self.train_epoch_summary_op = self.compute_metrics(
-                'train', self.train_batch['image'], self.train_batch['label'], train_class_weights
+                self.train_batch['image'], self.train_batch['label'], 'train', train_class_weights
                 )
 
         self.val_class_weights, \
@@ -136,7 +136,7 @@ class Trainer:
             self.val_metric_reset_op, \
             self.val_step_summary_op, \
             self.val_epoch_summary_op = self.compute_metrics(
-                'val', self.val_batch['image'], self.val_batch['label'], val_class_weights
+                self.val_batch['image'], self.val_batch['label'], 'val', val_class_weights
                 )
 
         self.train_op = self.optimizer.minimize(
@@ -159,33 +159,84 @@ class Trainer:
         os.makedirs(self.log_dir)
         os.makedirs(self.ckpt_dir)
 
-    def compute_metrics(self, mode, image, label, class_weights):
+    def compute_metrics(self,
+                        image,
+                        label,
+                        name,
+                        class_weights=None,
+                        ignore_id=255):
         with tf.variable_scope('model', reuse=tf.AUTO_REUSE):
             logits = self.model.forward(image)
             predictions = tf.argmax(logits, axis=3)
+        """Compute necessary metics: loss, weights, IoU, and summaries.
+
+        Parameters
+        ----------
+        image: (N, H, W, C=3) tf.tensor
+            Image batch used as an input.
+        label: (N, H, W, C=1) tf.tensor
+            Label batch used as a ground truth.
+        name: string
+            Variable scope prefix for the metrics.
+        class_weights: 1d tf.Tensor, default None
+            Weights to validation losses over classes.
+            This array will be used as the parameter of @p loss_fn.
+            It should have 1d tensor with the length of the number of classes.
+            If it's None, use 1 to equally weight classes.
+        ignore_id: int, default 255
+            Set weight as 0 if class id is @p ignore_id.
+            This means it will ignore losses of @p ignore_id class.
+
+        Returns
+        -------
+        class_weights_tensor: (N, H, W, C=1) tf.tensor
+            Constructed weights tensor.
+            This has the same shape to @p label.
+        loss: Scalar tensor
+            Loss value.
+        image_summary: (H, 3 * W, C=3) tf.tensor
+            Set of {input, prediction, ground truth} image
+            used for visualization.
+        mean_loss: Scalar tensor
+            Mean loss value per epoch.
+        mean_loss_update_op:
+            Operator to update mean loss.
+        mean_iou: Scalar tensor
+            Mean IoU per epoch.
+        mean_iou_update_op:
+            Operator to update mean IoU.
+        metric_reset_op:
+            Operator to reset mean_loss and mean_iou values.
+            Supposed to be called every epoch.
+        step_summary_op:
+            Operator to compute metrics for each step.
+        epoch_summary_op:
+            Operator to compute metrics for each epoch.
+        """
 
         # Metric computations should live in cpu.
         with tf.device('cpu:0'):
+            ignore_mask = tf.not_equal(label, ignore_id)
             class_weights_tensor = self.compute_class_weights(
-                label, class_weights=class_weights)
+                label, ignore_mask, class_weights)
 
-            with tf.variable_scope('{}_step_metrics'.format(mode)) as scope:
-                loss = self.loss_fn(
-                    tf.squeeze(label, squeeze_dims=[3]), logits,
-                    class_weights_tensor)
+            with tf.variable_scope('{}_step_metrics'.format(name)) as scope:
+                loss = self.loss_fn(label, logits, class_weights_tensor)
 
                 image_summary = tf.concat(
                     (image[0] * 255., self.color_map_fn(label[0]),
                      self.color_map_fn(tf.expand_dims(predictions[0], -1))),
                     axis=1)
 
-            with tf.variable_scope('{}_epoch_metrics'.format(mode)) as scope:
+            with tf.variable_scope('{}_epoch_metrics'.format(name)) as scope:
+                label_ignored = tf.multiply(label, tf.cast(
+                    ignore_mask, tf.int64))
                 mean_loss, mean_loss_update_op = tf.metrics.mean(loss)
                 mean_iou, mean_iou_update_op = tf.metrics.mean_iou(
-                    tf.squeeze(label, squeeze_dims=[3]),
+                    tf.squeeze(label_ignored, squeeze_dims=[3]),
                     predictions,
                     num_classes=self.num_classes,
-                    weights=class_weights_tensor)
+                    weights=tf.cast(ignore_mask, tf.float32))
                 var_list = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES)
                 metric_reset_op = tf.variables_initializer(var_list)
@@ -196,12 +247,12 @@ class Trainer:
             step_summaries = []
             epoch_summaries = []
             step_summaries.append(
-                tf.summary.image('{}_visualization'.format(mode),
+                tf.summary.image('{}_visualization'.format(name),
                                  tf.expand_dims(image_summary, 0)))
             step_summaries.append(
-                tf.summary.scalar('{}_mean_loss'.format(mode), mean_loss))
+                tf.summary.scalar('{}_mean_loss'.format(name), mean_loss))
             epoch_summaries.append(
-                tf.summary.scalar('{}_mean_iou'.format(mode), mean_iou))
+                tf.summary.scalar('{}_mean_iou'.format(name), mean_iou))
 
             step_summary_op = tf.summary.merge(step_summaries)
             epoch_summary_op = tf.summary.merge(epoch_summaries)
@@ -210,21 +261,22 @@ class Trainer:
             mean_iou, mean_iou_update_op, metric_reset_op, \
             step_summary_op, epoch_summary_op
 
-    def compute_class_weights(self, label, class_weights=None, ignore_id=0):
+    def compute_class_weights(self, label, ignore_mask, class_weights=None):
         """Compute weights on loss by label data.
 
         Parameters
         ----------
         label: (N, H, W, C=1) tf.tensor
             Label batch used as a ground truth.
+        ignore_mask: (N, H, W, C=1) tf.tensor
+            A boolean mask to ignore subset of elements.
+            False elements will be ignored and set as 0 in
+            @p class_weights_tensor.
         class_weights: 1d tf.Tensor, default None
-            Weights to losses over classes.
-            This array will be used as the parameter of @p self.loss_fn.
+            Weights to validation losses over classes.
+            This array will be used as the parameter of @p loss_fn.
             It should have 1d tensor with the length of the number of classes.
             If it's None, use 1 to equally weight classes.
-        ignore_id: int, default 0
-            Set weight as 0 if class id is @p ignore_id.
-            This means it will ignore losses of @p ignore_id class.
 
         Returns
         -------
@@ -232,14 +284,17 @@ class Trainer:
             Constructed weights tensor.
             This has the same shape to @p label.
         """
-        if class_weights is not None:
-            self.class_weights_tensor = tf.gather(class_weights, label)
-        else:
-            self.class_weights_tensor = tf.ones_like(label, dtype=tf.float32)
+        if class_weights is None:
+            class_weights_tensor = tf.cast(ignore_mask, tf.float32)
+            return class_weights_tensor
 
-        ignore_mask = tf.cast(tf.not_equal(label, ignore_id), tf.float32)
-        class_weights_tensor = tf.multiply(self.class_weights_tensor,
-                                           ignore_mask)
+        # Temporary set ignore id to 0 to avoid a tf.gather error on id 255.
+        label_tmp = tf.multiply(label, tf.cast(ignore_mask, tf.int64))
+        class_weights_tensor = tf.gather(class_weights, label_tmp)
+        # Set weight 0 for ignore id.
+        class_weights_tensor = tf.multiply(class_weights_tensor,
+                                           tf.cast(ignore_mask, tf.float32))
+
         return class_weights_tensor
 
     def train(self, sess):

@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -B
-"""The script to compute class distribution.
+"""The script to compute cityscapes class distribution.
 """
 
 import argparse
@@ -7,6 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 import os
 
+from glob import glob
 import numpy as np
 import tensorflow as tf
 
@@ -17,15 +18,15 @@ from sss.data.tfrecord import read_tfrecord
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="The script to compute class distribution.")
+        description="The script to compute cityscapes class distribution.")
     parser.add_argument(
-        'data_path', type=str, help='Path to the tfrecord data path.')
+        'data_path', type=str, help='Regex to the tfrecord data paths.')
     parser.add_argument('num_classes', type=int, help='Number of classes.')
 
     args = parser.parse_args()
 
     # Read from tfrecord format data made by sss.data.tfrecord.TFRecordWriter.
-    train_dataset = read_tfrecord(args.data_path)
+    train_dataset = read_tfrecord(glob(os.path.expanduser(args.data_path)))
     next_element = train_dataset.make_one_shot_iterator().get_next()
 
     # Count the number of classes.
@@ -40,6 +41,8 @@ if __name__ == '__main__':
                 label = np.array(
                     [id2label[i].trainId for i in label.flatten()]).reshape(
                         label.shape)
+                # ignore id 255.
+                label = label[label != 255]
                 for i, count in enumerate(np.bincount(label.flatten())):
                     class_counts[i] += count
                 loop += 1
