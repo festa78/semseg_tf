@@ -111,7 +111,7 @@ def test_fcn_architecture():
     with tf.Graph().as_default():
         dut = fcn8(NUM_CLASSES)
         dummy_in = tf.placeholder(tf.float32, (None, IMAGE_SIZE, IMAGE_SIZE, 3))
-        dut.forward(dummy_in)
+        dut(dummy_in)
         var_list = tf.get_collection(key=tf.GraphKeys.TRAINABLE_VARIABLES)
         var_list = sorted(var.name for var in var_list)
         assert var_list == GT_VAR_LIST
@@ -136,7 +136,7 @@ def test_fcn_update():
 
             with tf.device("/gpu:0"):
                 dut = model(NUM_CLASSES)
-                out = dut.forward(dummy_in)
+                out = dut(dummy_in)
 
             with tf.device("/cpu:0"):
                 loss = cross_entropy(dummy_gt, out, 1.)

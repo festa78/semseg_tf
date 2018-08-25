@@ -19,7 +19,7 @@ class Trainer:
     ----------
     model: object
         A semantic segmentation model object which
-        has .forward(input) method to get model output.
+        has .__call__(input) method to get model output.
     num_classes: int
         The number of output classes of the model.
     train_iterator: tf.Tensor
@@ -103,8 +103,8 @@ class Trainer:
         self.resume_path = resume_path
 
         # Inspect inputs.
-        if hasattr(model, 'forward') is False:
-            raise AttributeError('model object should have .forward() method.')
+        if hasattr(model, '__call__') is False:
+            raise AttributeError('model object should have .__call__() method.')
         if any(key not in self.train_batch for key in ('image', 'label')):
             raise AttributeError(
                 'train_batch object should have "image" and "label" keys')
@@ -166,7 +166,7 @@ class Trainer:
                         class_weights=None,
                         ignore_id=255):
         with tf.variable_scope('model', reuse=tf.AUTO_REUSE):
-            logits = self.model.forward(image)
+            logits = self.model(image)
             predictions = tf.argmax(logits, axis=3)
         """Compute necessary metics: loss, weights, IoU, and summaries.
 

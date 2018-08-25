@@ -219,7 +219,7 @@ class FCN:
         vgg_saver = tf.train.Saver(var_list=var_list)
         vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
 
-    def forward(self, x):
+    def __call__(self, x):
         """Forward the input tensor through the network.
         Parameters
         ----------
