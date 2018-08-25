@@ -172,10 +172,10 @@ if __name__ == '__main__':
 
         # XXX get proper parameters.
         learning_rate = tf.train.polynomial_decay(
-            learning_rate=1.e-4,
+            learning_rate=1.e-2,
             global_step=global_step,
             decay_steps=options['num_epochs'] * 2750 / options['batch_size'],
-            end_learning_rate=1.e-6,
+            end_learning_rate=1.e-4,
             power=0.9)
         # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         # optimizer = tf.train.MomentumOptimizer(learning_rate=1.e-4, momentum=.99)
