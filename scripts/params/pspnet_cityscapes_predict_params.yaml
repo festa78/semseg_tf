@@ -1,4 +1,4 @@
-# Parameters for FCN prediction on Cityscapes dataset.
+# Parameters for PSPNet prediction on Cityscapes dataset.
 
 # The batch size on prediction..
 batch_size: 4
@@ -9,7 +9,7 @@ test_resized_width: 1024
 # The directory path to save outputs.
 save_dir: "./outputs"
 # which model to use from fcn32, fcn16, and fcn8.
-mode: "fcn8"
+mode: "pspnet50"
 # The number of classes to use.
 num_classes: 20
 # The number of workers for tf.data.Dataset.map().

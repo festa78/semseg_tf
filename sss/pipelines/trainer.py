@@ -83,6 +83,7 @@ class Trainer:
             resume_path=None,
     ):
         self.logger = logging.getLogger(__name__)
+
         self.model = model
         self.num_classes = num_classes
         self.train_iterator = train_iterator
@@ -105,6 +106,9 @@ class Trainer:
         # Inspect inputs.
         if hasattr(model, '__call__') is False:
             raise AttributeError('model object should have .__call__() method.')
+        if hasattr(optimizer, 'minimize') is False:
+            raise AttributeError(
+                'optimizer object should have .minimize() method.')
         if any(key not in self.train_batch for key in ('image', 'label')):
             raise AttributeError(
                 'train_batch object should have "image" and "label" keys')

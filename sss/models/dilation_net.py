@@ -6,11 +6,10 @@ import numpy as np
 from tensorflow.contrib.slim.python.slim.nets import vgg
 import tensorflow as tf
 
-from sss.models.common import (make_conv2d, make_relu, make_max_pool2d,
-                               make_atrous_conv2d, make_dropout, make_upsample)
+from sss.models.common import Common
 
 
-class DilationNet:
+class DilationNet(Common):
     """Multi-scale context aggregation by dilated convolutions.
     cf. https://arxiv.org/abs/1511.07122
 
@@ -24,128 +23,132 @@ class DilationNet:
     MODES = ('dilation7', 'dilation8', 'dilation10')
 
     def __init__(self, num_classes, mode='dilation10'):
+        super().__init__()
+
         assert mode in self.MODES
         self.logger = logging.getLogger(__name__)
         self.num_classes = num_classes
         self.mode = mode
-        self.outsizes = OrderedDict()
 
         # Prepare layers.
-        self.conv1_1 = make_conv2d(
+        self.conv1_1 = self._make_conv2d(
             out_channels=64,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv1/conv1_1')
-        self.relu1_1 = make_relu(name='relu1/relu1_1')
-        self.conv1_2 = make_conv2d(
+        self.relu1_1 = self._make_relu(name='relu1/relu1_1')
+        self.conv1_2 = self._make_conv2d(
             out_channels=64,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv1/conv1_2')
-        self.relu1_2 = make_relu(name='relu1/relu1_2')
-        self.pool1 = make_max_pool2d(kernel_size=2, stride=2, name='pool1')
+        self.relu1_2 = self._make_relu(name='relu1/relu1_2')
+        self.pool1 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool1')
 
-        self.conv2_1 = make_conv2d(
+        self.conv2_1 = self._make_conv2d(
             out_channels=128,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv2/conv2_1')
-        self.relu2_1 = make_relu(name='relu2/relu2_1')
-        self.conv2_2 = make_conv2d(
+        self.relu2_1 = self._make_relu(name='relu2/relu2_1')
+        self.conv2_2 = self._make_conv2d(
             out_channels=128,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv2/conv2_2')
-        self.relu2_2 = make_relu(name='relu2/relu2_2')
-        self.pool2 = make_max_pool2d(kernel_size=2, stride=2, name='pool2')
+        self.relu2_2 = self._make_relu(name='relu2/relu2_2')
+        self.pool2 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool2')
 
-        self.conv3_1 = make_conv2d(
+        self.conv3_1 = self._make_conv2d(
             out_channels=256,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv3/conv3_1')
-        self.relu3_1 = make_relu(name='relu3/relu3_1')
-        self.conv3_2 = make_conv2d(
+        self.relu3_1 = self._make_relu(name='relu3/relu3_1')
+        self.conv3_2 = self._make_conv2d(
             out_channels=256,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv3/conv3_2')
-        self.relu3_2 = make_relu(name='relu3/relu3_2')
-        self.conv3_3 = make_conv2d(
+        self.relu3_2 = self._make_relu(name='relu3/relu3_2')
+        self.conv3_3 = self._make_conv2d(
             out_channels=256,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv3/conv3_3')
-        self.relu3_3 = make_relu(name='relu3/relu3_3')
-        self.pool3 = make_max_pool2d(kernel_size=2, stride=2, name='pool3')
+        self.relu3_3 = self._make_relu(name='relu3/relu3_3')
+        self.pool3 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool3')
 
-        self.conv4_1 = make_conv2d(
+        self.conv4_1 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv4/conv4_1')
-        self.relu4_1 = make_relu(name='relu4/relu4_1')
-        self.conv4_2 = make_conv2d(
+        self.relu4_1 = self._make_relu(name='relu4/relu4_1')
+        self.conv4_2 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv4/conv4_2')
-        self.relu4_2 = make_relu(name='relu4/relu4_2')
-        self.conv4_3 = make_conv2d(
+        self.relu4_2 = self._make_relu(name='relu4/relu4_2')
+        self.conv4_3 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv4/conv4_3')
-        self.relu4_3 = make_relu(name='relu4/relu4_3')
+        self.relu4_3 = self._make_relu(name='relu4/relu4_3')
 
-        self.conv5_1 = make_atrous_conv2d(
+        self.conv5_1 = self._make_atrous_conv2d(
             out_channels=512,
             kernel_size=3,
             atrous_rate=2,
             bias=True,
             name='conv5/conv5_1')
-        self.relu5_1 = make_relu(name='relu5/relu5_1')
-        self.conv5_2 = make_atrous_conv2d(
+        self.relu5_1 = self._make_relu(name='relu5/relu5_1')
+        self.conv5_2 = self._make_atrous_conv2d(
             out_channels=512,
             kernel_size=3,
             atrous_rate=2,
             bias=True,
             name='conv5/conv5_2')
-        self.relu5_2 = make_relu(name='relu5/relu5_2')
-        self.conv5_3 = make_atrous_conv2d(
+        self.relu5_2 = self._make_relu(name='relu5/relu5_2')
+        self.conv5_3 = self._make_atrous_conv2d(
             out_channels=512,
             kernel_size=3,
             atrous_rate=2,
             bias=True,
             name='conv5/conv5_3')
-        self.relu5_3 = make_relu(name='relu5/relu5_3')
+        self.relu5_3 = self._make_relu(name='relu5/relu5_3')
 
         # Use conv2d instead of fc.
-        self.fc6 = make_atrous_conv2d(
+        self.fc6 = self._make_atrous_conv2d(
             out_channels=4096,
             kernel_size=7,
             atrous_rate=4,
             bias=True,
             name='fc6')
-        self.relu6 = make_relu(name='relu6')
-        self.dropout6 = make_dropout(keep_prob=.5, name='dropout6')
+        self.relu6 = self._make_relu(name='relu6')
+        self.dropout6 = self._make_dropout(keep_prob=.5, name='dropout6')
 
-        self.fc7 = make_conv2d(
+        self.fc7 = self._make_conv2d(
             out_channels=4096, kernel_size=1, stride=1, bias=True, name='fc7')
-        self.relu7 = make_relu(name='relu7')
-        self.dropout7 = make_dropout(keep_prob=.5, name='dropout7')
+        self.relu7 = self._make_relu(name='relu7')
+        self.dropout7 = self._make_dropout(keep_prob=.5, name='dropout7')
 
-        self.final = make_conv2d(
+        self.final = self._make_conv2d(
             out_channels=num_classes,
             kernel_size=1,
             stride=1,
@@ -153,79 +156,79 @@ class DilationNet:
             name='final')
 
         # TODO: needs manual padding?
-        self.ctx_conv1_1 = make_conv2d(
+        self.ctx_conv1_1 = self._make_conv2d(
             out_channels=num_classes,
             kernel_size=3,
             stride=1,
             bias=True,
             name='ctx_conv1/ctx_conv1_1')
-        self.ctx_relu1_1 = make_relu(name='ctx_relu1/ctx_relu1_1')
-        self.ctx_conv1_2 = make_conv2d(
+        self.ctx_relu1_1 = self._make_relu(name='ctx_relu1/ctx_relu1_1')
+        self.ctx_conv1_2 = self._make_conv2d(
             out_channels=num_classes,
             kernel_size=3,
             stride=1,
             bias=True,
             name='ctx_conv1/ctx_conv1_2')
-        self.ctx_relu1_2 = make_relu(name='ctx_relu1/ctx_relu1_2')
+        self.ctx_relu1_2 = self._make_relu(name='ctx_relu1/ctx_relu1_2')
 
-        self.ctx_conv2_1 = make_atrous_conv2d(
+        self.ctx_conv2_1 = self._make_atrous_conv2d(
             out_channels=num_classes,
             kernel_size=3,
             atrous_rate=2,
             bias=True,
             name='ctx_conv2/ctx_conv2_1')
-        self.ctx_relu2_1 = make_relu(name='ctx_relu1/ctx_relu2_1')
+        self.ctx_relu2_1 = self._make_relu(name='ctx_relu1/ctx_relu2_1')
 
-        self.ctx_conv3_1 = make_atrous_conv2d(
+        self.ctx_conv3_1 = self._make_atrous_conv2d(
             out_channels=num_classes,
             kernel_size=3,
             atrous_rate=4,
             bias=True,
             name='ctx_conv3/ctx_conv3_1')
-        self.ctx_relu3_1 = make_relu(name='ctx_relu1/ctx_relu3_1')
+        self.ctx_relu3_1 = self._make_relu(name='ctx_relu1/ctx_relu3_1')
 
-        self.ctx_conv4_1 = make_atrous_conv2d(
+        self.ctx_conv4_1 = self._make_atrous_conv2d(
             out_channels=num_classes,
             kernel_size=3,
             atrous_rate=8,
             bias=True,
             name='ctx_conv4/ctx_conv4_1')
-        self.ctx_relu4_1 = make_relu(name='ctx_relu1/ctx_relu4_1')
+        self.ctx_relu4_1 = self._make_relu(name='ctx_relu1/ctx_relu4_1')
 
         if self.mode in ('dilation8', 'dilation10'):
-            self.ctx_conv5_1 = make_atrous_conv2d(
+            self.ctx_conv5_1 = self._make_atrous_conv2d(
                 out_channels=num_classes,
                 kernel_size=3,
                 atrous_rate=16,
                 bias=True,
                 name='ctx_conv5/ctx_conv5_1')
-            self.ctx_relu5_1 = make_relu(name='ctx_relu1/ctx_relu5_1')
+            self.ctx_relu5_1 = self._make_relu(name='ctx_relu1/ctx_relu5_1')
 
             if self.mode == 'dilation10':
-                self.ctx_conv6_1 = make_atrous_conv2d(
+                self.ctx_conv6_1 = self._make_atrous_conv2d(
                     out_channels=num_classes,
                     kernel_size=3,
                     atrous_rate=32,
                     bias=True,
                     name='ctx_conv6/ctx_conv6_1')
-                self.ctx_relu6_1 = make_relu(name='ctx_relu1/ctx_relu6_1')
+                self.ctx_relu6_1 = self._make_relu(name='ctx_relu1/ctx_relu6_1')
 
-                self.ctx_conv7_1 = make_atrous_conv2d(
+                self.ctx_conv7_1 = self._make_atrous_conv2d(
                     out_channels=num_classes,
                     kernel_size=3,
                     atrous_rate=64,
                     bias=True,
                     name='ctx_conv7/ctx_conv7_1')
-                self.ctx_relu7_1 = make_relu(name='ctx_relu1/ctx_relu7_1')
+                self.ctx_relu7_1 = self._make_relu(name='ctx_relu1/ctx_relu7_1')
 
-        self.ctx_fc1 = make_conv2d(
+        self.ctx_fc1 = self._make_conv2d(
             out_channels=num_classes,
             kernel_size=3,
             stride=1,
             bias=True,
             name='ctx_fc1')
-        self.ctx_fc1_relu = make_relu(name='ctx_fc1_relu')
-        self.ctx_final = make_conv2d(
+        self.ctx_fc1_relu = self._make_relu(name='ctx_fc1_relu')
+        self.ctx_final = self._make_conv2d(
             out_channels=num_classes,
             kernel_size=1,
             stride=1,
@@ -233,7 +236,7 @@ class DilationNet:
             name='ctx_final')
 
         # TODO: should not upsample for diltaion7 and dilation8?
-        self.ctx_upsample = make_upsample(
+        self.ctx_upsample = self._make_upsample(
             out_channels=self.num_classes,
             kernel_size=16,
             stride=8,

@@ -6,11 +6,10 @@ import numpy as np
 from tensorflow.contrib.slim.python.slim.nets import vgg
 import tensorflow as tf
 
-from sss.models.common import (make_conv2d, make_relu, make_max_pool2d,
-                               make_dropout, make_upsample)
+from sss.models.common import Common
 
 
-class FCN:
+class FCN(Common):
     """Fully convolutional network (FCN) implementation.
     cf. https://arxiv.org/abs/1411.4038
 
@@ -24,127 +23,133 @@ class FCN:
     MODES = ('fcn32', 'fcn16', 'fcn8')
 
     def __init__(self, num_classes, mode='fcn32'):
+        super().__init__()
+
         assert mode in self.MODES
         self.logger = logging.getLogger(__name__)
         self.num_classes = num_classes
         self.mode = mode
-        self.outsizes = OrderedDict()
 
         # Prepare layers.
         # TODO: 100 padding.
-        self.conv1_1 = make_conv2d(
+        self.conv1_1 = self._make_conv2d(
             out_channels=64,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv1/conv1_1')
-        self.relu1_1 = make_relu(name='relu1/relu1_1')
-        self.conv1_2 = make_conv2d(
+        self.relu1_1 = self._make_relu(name='relu1/relu1_1')
+        self.conv1_2 = self._make_conv2d(
             out_channels=64,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv1/conv1_2')
-        self.relu1_2 = make_relu(name='relu1/relu1_2')
-        self.pool1 = make_max_pool2d(kernel_size=2, stride=2, name='pool1')
+        self.relu1_2 = self._make_relu(name='relu1/relu1_2')
+        self.pool1 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool1')
 
-        self.conv2_1 = make_conv2d(
+        self.conv2_1 = self._make_conv2d(
             out_channels=128,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv2/conv2_1')
-        self.relu2_1 = make_relu(name='relu2/relu2_1')
-        self.conv2_2 = make_conv2d(
+        self.relu2_1 = self._make_relu(name='relu2/relu2_1')
+        self.conv2_2 = self._make_conv2d(
             out_channels=128,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv2/conv2_2')
-        self.relu2_2 = make_relu(name='relu2/relu2_2')
-        self.pool2 = make_max_pool2d(kernel_size=2, stride=2, name='pool2')
+        self.relu2_2 = self._make_relu(name='relu2/relu2_2')
+        self.pool2 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool2')
 
-        self.conv3_1 = make_conv2d(
+        self.conv3_1 = self._make_conv2d(
             out_channels=256,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv3/conv3_1')
-        self.relu3_1 = make_relu(name='relu3/relu3_1')
-        self.conv3_2 = make_conv2d(
+        self.relu3_1 = self._make_relu(name='relu3/relu3_1')
+        self.conv3_2 = self._make_conv2d(
             out_channels=256,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv3/conv3_2')
-        self.relu3_2 = make_relu(name='relu3/relu3_2')
-        self.conv3_3 = make_conv2d(
+        self.relu3_2 = self._make_relu(name='relu3/relu3_2')
+        self.conv3_3 = self._make_conv2d(
             out_channels=256,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv3/conv3_3')
-        self.relu3_3 = make_relu(name='relu3/relu3_3')
-        self.pool3 = make_max_pool2d(kernel_size=2, stride=2, name='pool3')
+        self.relu3_3 = self._make_relu(name='relu3/relu3_3')
+        self.pool3 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool3')
 
-        self.conv4_1 = make_conv2d(
+        self.conv4_1 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv4/conv4_1')
-        self.relu4_1 = make_relu(name='relu4/relu4_1')
-        self.conv4_2 = make_conv2d(
+        self.relu4_1 = self._make_relu(name='relu4/relu4_1')
+        self.conv4_2 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv4/conv4_2')
-        self.relu4_2 = make_relu(name='relu4/relu4_2')
-        self.conv4_3 = make_conv2d(
+        self.relu4_2 = self._make_relu(name='relu4/relu4_2')
+        self.conv4_3 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv4/conv4_3')
-        self.relu4_3 = make_relu(name='relu4/relu4_3')
-        self.pool4 = make_max_pool2d(kernel_size=2, stride=2, name='pool4')
+        self.relu4_3 = self._make_relu(name='relu4/relu4_3')
+        self.pool4 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool4')
 
-        self.conv5_1 = make_conv2d(
+        self.conv5_1 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv5/conv5_1')
-        self.relu5_1 = make_relu(name='relu5/relu5_1')
-        self.conv5_2 = make_conv2d(
+        self.relu5_1 = self._make_relu(name='relu5/relu5_1')
+        self.conv5_2 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv5/conv5_2')
-        self.relu5_2 = make_relu(name='relu5/relu5_2')
-        self.conv5_3 = make_conv2d(
+        self.relu5_2 = self._make_relu(name='relu5/relu5_2')
+        self.conv5_3 = self._make_conv2d(
             out_channels=512,
             kernel_size=3,
             stride=1,
             bias=True,
             name='conv5/conv5_3')
-        self.relu5_3 = make_relu(name='relu5/relu5_3')
-        self.pool5 = make_max_pool2d(kernel_size=2, stride=2, name='pool5')
+        self.relu5_3 = self._make_relu(name='relu5/relu5_3')
+        self.pool5 = self._make_max_pool2d(
+            kernel_size=2, stride=2, name='pool5')
 
         # Use conv2d instead of fc.
-        self.fc6 = make_conv2d(
+        self.fc6 = self._make_conv2d(
             out_channels=4096, kernel_size=7, stride=1, bias=True, name='fc6')
-        self.relu6 = make_relu(name='relu6')
-        self.dropout6 = make_dropout(keep_prob=.5, name='dropout6')
+        self.relu6 = self._make_relu(name='relu6')
+        self.dropout6 = self._make_dropout(keep_prob=.5, name='dropout6')
 
-        self.fc7 = make_conv2d(
+        self.fc7 = self._make_conv2d(
             out_channels=4096, kernel_size=1, stride=1, bias=True, name='fc7')
-        self.relu7 = make_relu(name='relu7')
-        self.dropout7 = make_dropout(keep_prob=.5, name='dropout7')
+        self.relu7 = self._make_relu(name='relu7')
+        self.dropout7 = self._make_dropout(keep_prob=.5, name='dropout7')
 
-        self.score_fr = make_conv2d(
+        self.score_fr = self._make_conv2d(
             out_channels=self.num_classes,
             kernel_size=1,
             stride=1,
@@ -152,20 +157,20 @@ class FCN:
             name='score_fr')
 
         if self.mode == 'fcn32':
-            self.upscore32 = make_upsample(
+            self.upscore32 = self._make_upsample(
                 out_channels=self.num_classes,
                 kernel_size=64,
                 stride=32,
                 name='upscore32')
 
         if self.mode in ('fcn16', 'fcn8'):
-            self.upscore2 = make_upsample(
+            self.upscore2 = self._make_upsample(
                 out_channels=self.num_classes,
                 kernel_size=4,
                 stride=2,
                 name='upscore2')
 
-            self.score_pool4 = make_conv2d(
+            self.score_pool4 = self._make_conv2d(
                 out_channels=self.num_classes,
                 kernel_size=1,
                 stride=1,
@@ -173,25 +178,25 @@ class FCN:
                 name='score_pool4')
 
             if self.mode == 'fcn16':
-                self.upscore16 = make_upsample(
+                self.upscore16 = self._make_upsample(
                     out_channels=self.num_classes,
                     kernel_size=32,
                     stride=16,
                     name='upscore16')
             else:
-                self.upscore_pool4 = make_upsample(
+                self.upscore_pool4 = self._make_upsample(
                     out_channels=self.num_classes,
                     kernel_size=4,
                     stride=2,
                     name='upscore_pool4')
 
-                self.upscore8 = make_upsample(
+                self.upscore8 = self._make_upsample(
                     out_channels=self.num_classes,
                     kernel_size=16,
                     stride=8,
                     name='upscore8')
 
-                self.score_pool3 = make_conv2d(
+                self.score_pool3 = self._make_conv2d(
                     out_channels=self.num_classes,
                     kernel_size=1,
                     stride=1,

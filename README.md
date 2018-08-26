@@ -1,16 +1,17 @@
 TensorFlow-based semantic segmentation codes.
 
-## Implemented model and data I/O.
+## Implemented models and data I/Os
 
 ### Model
-- [FCN](https://arxiv.org/abs/1411.4038) model.
+- [Fully Convolutional Network](https://arxiv.org/abs/1411.4038) model.
 - [Dilated Network](https://arxiv.org/abs/1511.07122) model.
+- [Pyramid Scene Parsing Network](https://arxiv.org/abs/1612.01105) model.
 
 ### Data I/O
 - [Cityscapes](https://www.cityscapes-dataset.com/) dataset.
 
 ## Prepare .tfrecord data
-This repo only assume .tfrecord format data.  
+This repo only assumes .tfrecord format data.  
 The .tfrecord data should be created by `scripts/${data_name}_write.py`.  
 
 ## Training

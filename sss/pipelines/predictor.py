@@ -65,6 +65,9 @@ class Predictor:
                 'test_batch object should have "image" and "label" keys')
 
         with tf.variable_scope('model', reuse=tf.AUTO_REUSE):
+            # Necessary for some special layers, e.g. batch normalization.
+            if hasattr(model, 'training'):
+                self.model.training = False
             self.logits = self.model(self.test_batch['image'])
             self.predictions = tf.argmax(self.logits, axis=3)
 

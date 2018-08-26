@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -B
-"""The script to predict cityscapes data by a fully convolutional network (aka FCN).
+"""The script to predict cityscapes data by a dilated network.
 """
 
 import argparse
@@ -17,15 +17,14 @@ import project_root
 from sss.data.cityscapes import id2trainid_tensor, trainid2color_tensor
 from sss.data.data_preprocessor import DataPreprocessor
 from sss.data.tfrecord import read_tfrecord
-from sss.models.fcn import fcn8, fcn16, fcn32
+from sss.models.dilation_net import dilation7, dilation8, dilation10
 from sss.pipelines.predictor import Predictor
 from sss.utils.image_processing import resize_image_and_label
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=
-        "The script to predict cityscapes data by a fully convolutional network (aka FCN)."
-    )
+        "The script to predict cityscapes data by a dilation network.")
     parser.add_argument(
         'params_yaml',
         type=str,
@@ -80,14 +79,14 @@ if __name__ == '__main__':
         test_iterator = test_data_processor.get_iterator()
 
     with tf.device('/gpu:0'):
-        if options['mode'] == 'fcn32':
-            model = fcn32(options['num_classes'])
-        elif options['mode'] == 'fcn16':
-            model = fcn16(options['num_classes'])
-        elif options['mode'] == 'fcn8':
-            model = fcn8(options['num_classes'])
+        if options['mode'] == 'dilation7':
+            model = dilation7(options['num_classes'])
+        elif options['mode'] == 'dilation7':
+            model = dilation7(options['num_classes'])
+        elif options['mode'] == 'dilation10':
+            model = dilation10(options['num_classes'])
         else:
-            raise AttributeError('mode {} does not exist.'.format(
+            raise AttributeError('Mode {} does not exist.'.format(
                 options['mode']))
 
         predictor = Predictor(

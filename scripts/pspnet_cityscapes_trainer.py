@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -B
-"""The script to train cityscapes data by a fully convolutional network (aka FCN).
+"""The script to train cityscapes data by a pyramid scene parsing network (aka PSPNet).
 """
 
 import argparse
@@ -17,7 +17,7 @@ import project_root
 from sss.data.cityscapes import id2trainid_tensor, trainid2color_tensor
 from sss.data.data_preprocessor import DataPreprocessor
 from sss.data.tfrecord import read_tfrecord
-from sss.models.fcn import fcn8, fcn16, fcn32
+from sss.models.psp_net import pspnet50, pspnet101
 from sss.pipelines.trainer import Trainer
 from sss.utils.image_processing import random_crop_image_and_label, \
     random_flip_left_right_image_and_label, resize_image_and_label
@@ -26,7 +26,7 @@ from sss.utils.losses import cross_entropy
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=
-        "The script to train cityscapes data by a fully convolutional network (aka FCN)."
+        "The script to train cityscapes data by a pyramid scene parsing network (aka PSPNet)."
     )
     parser.add_argument(
         'params_yaml',
@@ -165,12 +165,10 @@ if __name__ == '__main__':
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
     with tf.device('/gpu:0'):
-        if options['mode'] == 'fcn32':
-            model = fcn32(options['num_classes'])
-        elif options['mode'] == 'fcn16':
-            model = fcn16(options['num_classes'])
-        elif options['mode'] == 'fcn8':
-            model = fcn8(options['num_classes'])
+        if options['mode'] == 'pspnet50':
+            model = pspnet50(options['num_classes'])
+        elif options['mode'] == 'pspnet101':
+            model = pspnet101(options['num_classes'])
         else:
             raise AttributeError('Mode {} does not exist.'.format(
                 options['mode']))
@@ -204,9 +202,4 @@ if __name__ == '__main__':
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        if options['vgg_pretrain_ckpt_path'] and not resume_fullpath:
-            model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'],
-                                      'model/')
-            logging.info('The vgg weights loaded from {}.'.format(
-                options['vgg_pretrain_ckpt_path']))
         trainer.train(sess)

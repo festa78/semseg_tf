@@ -118,7 +118,7 @@ if __name__ == '__main__':
             train_data_processor.process_image_and_label(
                 random_crop_image_and_label,
                 crop_size=(options['train_crop_height'],
-                        options['train_crop_width']))
+                           options['train_crop_width']))
 
         if options['random_flip_left_right']:
             logging.info('Randomly horizontal flip image and label.')
@@ -141,7 +141,7 @@ if __name__ == '__main__':
             val_data_processor.process_image_and_label(
                 resize_image_and_label,
                 size=tf.constant((options['val_resized_height'],
-                                options['val_resized_width'])))
+                                  options['val_resized_width'])))
 
         logging.info('Convert label ontology from Id to trainId.')
         val_data_processor.process_label(id2trainid_tensor)
@@ -155,30 +155,36 @@ if __name__ == '__main__':
         train_class_weights = options['train_class_weights']
         val_class_weights = options['val_class_weights']
         if train_class_weights:
-            train_class_weights = np.array(
-                train_class_weights, dtype=np.float)
+            train_class_weights = np.array(train_class_weights, dtype=np.float)
             assert train_class_weights.shape[0] == options['num_classes']
-            train_class_weights = tf.constant(train_class_weights, dtype=tf.float32)
+            train_class_weights = tf.constant(
+                train_class_weights, dtype=tf.float32)
         if val_class_weights:
-            val_class_weights = np.array(
-                val_class_weights, dtype=np.float)
+            val_class_weights = np.array(val_class_weights, dtype=np.float)
             assert val_class_weights.shape[0] == options['num_classes']
             val_class_weights = tf.constant(val_class_weights, dtype=tf.float32)
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
     with tf.device('/gpu:0'):
-        model = dilation10(options['num_classes'])
+        if options['mode'] == 'dilation7':
+            model = dilation7(options['num_classes'])
+        elif options['mode'] == 'dilation7':
+            model = dilation7(options['num_classes'])
+        elif options['mode'] == 'dilation10':
+            model = dilation10(options['num_classes'])
+        else:
+            raise AttributeError('Mode {} does not exist.'.format(
+                options['mode']))
 
-        # XXX get proper parameters.
+        # TODO: Add more optimizers.
         learning_rate = tf.train.polynomial_decay(
-            learning_rate=1.e-2,
+            learning_rate=options['learning_rate'],
             global_step=global_step,
-            decay_steps=options['num_epochs'] * 2750 / options['batch_size'],
-            end_learning_rate=1.e-4,
-            power=0.9)
-        # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        # optimizer = tf.train.MomentumOptimizer(learning_rate=1.e-4, momentum=.99)
+            decay_steps=options['num_epochs'] * options['num_train_samples'] /
+            options['batch_size'],
+            end_learning_rate=options['end_learning_rate'],
+            power=options['power'])
         optimizer = tf.train.GradientDescentOptimizer(
             learning_rate=learning_rate)
 
