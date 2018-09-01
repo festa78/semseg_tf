@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 
-from sss.data.cityscapes import get_cityscapes_file_path, id2trainid_tensor, trainid2color_tensor
+from sss.data.cityscapes import get_file_path, id2trainid_tensor, trainid2color_tensor
 
 
 def _create_sample_cityscapes_structure(tmpdir):
@@ -61,12 +61,12 @@ def _create_sample_cityscapes_structure(tmpdir):
     return root_dir_path, data_list
 
 
-def test_cityscapes_get_file_path(tmpdir):
+def test_get_file_path(tmpdir):
     """Test it can get file paths from cityscapes like data structure.
     """
     input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
     output_dir = input_dir
-    data_list = get_cityscapes_file_path(input_dir)
+    data_list = get_file_path(input_dir)
     for cat1, cat2 in zip(data_list.values(), gt_data_list.values()):
         for list1, list2 in zip(cat1.values(), cat2.values()):
             # Do not care about orders.

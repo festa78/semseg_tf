@@ -9,6 +9,7 @@ TensorFlow-based semantic segmentation codes.
 
 ### Data I/O
 - [Cityscapes](https://www.cityscapes-dataset.com/) dataset.
+- [VOC2012](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) dataset.
 
 ## Prepare .tfrecord data
 This repo only assumes .tfrecord format data.  

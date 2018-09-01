@@ -109,7 +109,7 @@ for label in labels:
 # yapf: enable
 
 
-def get_cityscapes_file_path(input_dir):
+def get_file_path(input_dir):
     """Parse Cityscapes data and get file path list.
 
     Parameters
