@@ -153,14 +153,17 @@ if __name__ == '__main__':
         val_iterator = val_data_processor.get_iterator()
 
         # Get classes weights to use on loss computation.
-        train_class_weights = np.array(
-            options['train_class_weights'], dtype=np.float)
-        val_class_weights = np.array(
-            options['val_class_weights'], dtype=np.float)
-        assert train_class_weights.shape[0] == options['num_classes']
-        assert val_class_weights.shape[0] == options['num_classes']
-        train_class_weights = tf.constant(train_class_weights, dtype=tf.float32)
-        val_class_weights = tf.constant(val_class_weights, dtype=tf.float32)
+        train_class_weights = options['train_class_weights']
+        val_class_weights = options['val_class_weights']
+        if train_class_weights:
+            train_class_weights = np.array(train_class_weights, dtype=np.float)
+            assert train_class_weights.shape[0] == options['num_classes']
+            train_class_weights = tf.constant(
+                train_class_weights, dtype=tf.float32)
+        if val_class_weights:
+            val_class_weights = np.array(val_class_weights, dtype=np.float)
+            assert val_class_weights.shape[0] == options['num_classes']
+            val_class_weights = tf.constant(val_class_weights, dtype=tf.float32)
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
 

@@ -69,10 +69,11 @@ def random_crop_image_and_label(image, label, crop_size):
 def resize_image_and_label(image,
                            label,
                            size,
-                           method=tf.image.ResizeMethod.BILINEAR,
+                           image_method=tf.image.ResizeMethod.BILINEAR,
+                           label_method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
                            align_corners=False):
     image_resize = tf.image.resize_images(
-        image, size, method=method, align_corners=align_corners)
+        image, size, method=image_method, align_corners=align_corners)
     label_resize = tf.image.resize_images(
-        label, size, method=method, align_corners=align_corners)
+        label, size, method=label_method, align_corners=align_corners)
     return image_resize, label_resize

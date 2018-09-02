@@ -237,7 +237,7 @@ class Trainer:
                     ignore_mask, tf.int64))
                 mean_loss, mean_loss_update_op = tf.metrics.mean(loss)
                 mean_iou, mean_iou_update_op = tf.metrics.mean_iou(
-                    tf.squeeze(label_ignored, squeeze_dims=[3]),
+                    tf.squeeze(label_ignored, axis=[3]),
                     predictions,
                     num_classes=self.num_classes,
                     weights=tf.cast(ignore_mask, tf.float32))

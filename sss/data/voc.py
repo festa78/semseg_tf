@@ -141,10 +141,12 @@ def id2trainid_tensor(label):
         functional which converts id to trainId.
 
     """
-    label_trainid =  tf.py_func(
+
+    label_trainid = tf.py_func(
         func=lambda x: np.array([id2label[int(i)].trainId for i in np.nditer(x)], dtype=np.int64).reshape(x.shape),
         inp=[label],
         Tout=tf.int64)
+
     # Restore shape as py_func loses shape information.
     label_trainid.set_shape(label.get_shape())
     return label_trainid

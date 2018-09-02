@@ -10,7 +10,7 @@ import tensorflow as tf
 import project_root
 
 from sss.data.tfrecord import read_tfrecord, write_tfrecord
-from sss.data.cityscapes import get_cityscapes_file_path
+from sss.data.cityscapes import get_file_path
 
 IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
 
@@ -78,7 +78,7 @@ def test_write_read_tfrecord(tmpdir):
     input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
     output_dir = input_dir
     # Convert from py.path.local to str.
-    data_list = get_cityscapes_file_path(input_dir)
+    data_list = get_file_path(input_dir)
     write_tfrecord(data_list, output_dir)
 
     # Read the created tfrecord file.
