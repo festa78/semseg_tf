@@ -1,15 +1,15 @@
-# Parameters for Dilated Network training on Cityscapes dataset.
+# Parameters for Dilated Network training on VOC2012 dataset.
 
 # The batch size on training.
-batch_size: 10
+batch_size: 20
 # The height of resized image for train.
-train_resized_height: 512
+train_resized_height: 224
 # The width of resized image for train.
-train_resized_width: 1024
+train_resized_width: 224
 # The height of resized image for validation.
-val_resized_height: 512
+val_resized_height: 224
 # The width of resized image for validation.
-val_resized_width: 1024
+val_resized_width: 224
 # The crop height size for random cropping in training.
 train_crop_height: 224
 # The crop width size for random cropping in training.
@@ -17,11 +17,11 @@ train_crop_width: 224
 # The directory path to save logs and models.
 save_dir: "./tmp"
 # which model to use from dilation7, dilation8, and dilation10
-mode: "dilation10"
-# The  number of epochs to train.
+mode: "dilation7"
+# The number of epochs to train.
 num_epochs: 15000
 # The number of classes to use.
-num_classes: 19
+num_classes: 21
 # The number of workers for tf.data.Dataset.map().
 num_parallel_calls: 10
 # The parameter for tf.data.Dataset.prefetch().
@@ -37,67 +37,71 @@ random_hue: 0.2
 # Scale factor used to adjust saturation.
 random_saturation: 0.2
 # Parameters for tf.train.polynomial_decay.
-learning_rate: 0.02
-end_learning_rate: 0.0002
+learning_rate: 0.00002
+end_learning_rate: 0.000002
 power: 0.9
 # The number of training samples. Use to compute decay steps
 # for polynomial learning rate.
-num_train_samples: 3750
+num_train_samples: 10582
 # Evaluate model by validation dataset and compute metrics
 # every @p evaluate_freq epochs.
-evaluate_freq: 2
+evaluate_freq: 1
 # The path of .ckpt file to resume session.
 resume_path:
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
 # Path to the cityscapes tfrecord data directory.
-# The data should be created by sss.data.tfrecord.TFRecordWriter.
-tfdata_dir: "/home/ubuntu/workspace/local_data/cityscapes/tfrecord"
+# The data should be created by sss.data.tfrecord.write_tfrecord.
+tfdata_dir: "/home/ubuntu/workspace/local_data/voc/VOCdevkit/VOC2012/tfrecord"
 # The path to pretrain model of vgg.
 vgg_pretrain_ckpt_path: "/home/ubuntu/workspace/local_data/vgg_16.ckpt"
-# The 19 classes trainId class weights to use for weighted
+# The 21 classes trainId class weights to use for weighted
 # train cross entropy, loss, and iou computation.
 # Values are computed from inverse class distribution.
 train_class_weights:
-  - 0.00060652
-  - 0.00367501
-  - 0.00097977
-  - 0.03412028
-  - 0.02549083
-  - 0.01822018
-  - 0.10761762
-  - 0.04056519
-  - 0.00140391
-  - 0.01931424
-  - 0.00556419
-  - 0.0183455 
-  - 0.16549779
-  - 0.00319712
-  - 0.08361152
-  - 0.09508155
-  - 0.09601533
-  - 0.22666588
-  - 0.05402757
-# The 19 classes trainId class weights to use for weighted
+  - 0.00070498
+  - 0.05313675
+  - 0.05884179
+  - 0.05495879
+  - 0.07276287
+  - 0.09380548
+  - 0.03987856
+  - 0.02450846
+  - 0.01498173
+  - 0.03718201
+  - 0.08789687
+  - 0.04620375
+  - 0.01679312
+  - 0.0536041
+  - 0.04128394
+  - 0.00629054
+  - 0.07775437
+  - 0.07969037
+  - 0.04043355
+  - 0.03686975
+  - 0.06241824
+# The 21 classes trainId class weights to use for weighted
 # val cross entropy, loss, and iou computation.
 # Values are computed from inverse class distribution.
 val_class_weights:
-  - 0.00060652
-  - 0.00367501
-  - 0.00097977
-  - 0.03412028
-  - 0.02549083
-  - 0.01822018
-  - 0.10761762
-  - 0.04056519
-  - 0.00140391
-  - 0.01931424
-  - 0.00556419
-  - 0.0183455 
-  - 0.16549779
-  - 0.00319712
-  - 0.08361152
-  - 0.09508155
-  - 0.09601533
-  - 0.22666588
-  - 0.05402757
+  - 0.00070498
+  - 0.05313675
+  - 0.05884179
+  - 0.05495879
+  - 0.07276287
+  - 0.09380548
+  - 0.03987856
+  - 0.02450846
+  - 0.01498173
+  - 0.03718201
+  - 0.08789687
+  - 0.04620375
+  - 0.01679312
+  - 0.0536041
+  - 0.04128394
+  - 0.00629054
+  - 0.07775437
+  - 0.07969037
+  - 0.04043355
+  - 0.03686975
+  - 0.06241824

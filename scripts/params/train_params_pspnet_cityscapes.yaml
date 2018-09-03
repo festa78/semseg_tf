@@ -1,0 +1,101 @@
+# Parameters for PSPNet training on Cityscapes dataset.
+
+# The batch size on training.
+batch_size: 8
+# The height of resized image for train.
+train_resized_height: 512
+# The width of resized image for train.
+train_resized_width: 1024
+# The height of resized image for validation.
+val_resized_height: 512
+# The width of resized image for validation.
+val_resized_width: 1024
+# The crop height size for random cropping in training.
+train_crop_height: 224
+# The crop width size for random cropping in training.
+train_crop_width: 224
+# The directory path to save logs and models.
+save_dir: "./tmp"
+# which model to use from pspnet50 and pspnet101.
+mode: "pspnet50"
+# The number of epochs to train.
+num_epochs: 15000
+# The number of classes to use.
+num_classes: 19
+# The number of workers for tf.data.Dataset.map().
+num_parallel_calls: 10
+# The parameter for tf.data.Dataset.prefetch().
+prefetch_buffer_size: 10
+# If true, random flip image horizontally.
+random_flip_left_right: true
+# Scale factor used to adjust brightness.
+random_brightness: 0.2
+# Scale factor used to adjust contrast.
+random_contrast: 0.2
+# Scale factor used to adjust hue.
+random_hue: 0.2
+# Scale factor used to adjust saturation.
+random_saturation: 0.2
+# Parameters for tf.train.polynomial_decay.
+learning_rate: 0.02
+end_learning_rate: 0.0002
+power: 0.9
+# The number of training samples. Use to compute decay steps
+# for polynomial learning rate.
+num_train_samples: 3750
+# Evaluate model by validation dataset and compute metrics
+# every @p evaluate_freq epochs.
+evaluate_freq: 1
+# The path of .ckpt file to resume session.
+resume_path:
+# The parameter for tf.data.Dataset.shuffle().
+shuffle_buffer_size: 100
+# Path to the cityscapes tfrecord data directory.
+# The data should be created by sss.data.tfrecord.write_tfrecord.
+tfdata_dir: "/home/ubuntu/workspace/local_data/cityscapes/tfrecord"
+# The 19 classes trainId class weights to use for weighted
+# train cross entropy, loss, and iou computation.
+# Values are computed from inverse class distribution.
+train_class_weights:
+  - 0.00060652
+  - 0.00367501
+  - 0.00097977
+  - 0.03412028
+  - 0.02549083
+  - 0.01822018
+  - 0.10761762
+  - 0.04056519
+  - 0.00140391
+  - 0.01931424
+  - 0.00556419
+  - 0.0183455 
+  - 0.16549779
+  - 0.00319712
+  - 0.08361152
+  - 0.09508155
+  - 0.09601533
+  - 0.22666588
+  - 0.05402757
+# The 19 classes trainId class weights to use for weighted
+# val cross entropy, loss, and iou computation.
+# Values are computed from inverse class distribution.
+val_class_weights:
+  - 0.00060652
+  - 0.00367501
+  - 0.00097977
+  - 0.03412028
+  - 0.02549083
+  - 0.01822018
+  - 0.10761762
+  - 0.04056519
+  - 0.00140391
+  - 0.01931424
+  - 0.00556419
+  - 0.0183455 
+  - 0.16549779
+  - 0.00319712
+  - 0.08361152
+  - 0.09508155
+  - 0.09601533
+  - 0.22666588
+  - 0.05402757

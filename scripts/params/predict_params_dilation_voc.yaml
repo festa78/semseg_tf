@@ -1,4 +1,4 @@
-# Parameters for Dilated Network prediction on Cityscapes dataset.
+# Parameters for Dilated Network prediction on VOC2012 dataset.
 
 # The batch size on prediction..
 batch_size: 4
@@ -9,7 +9,7 @@ test_resized_width: 1024
 # The directory path to save outputs.
 save_dir: "./outputs"
 # which model to use from dilation7, dilation8, and dilation10
-mode: "dilation10"
+mode: "dilation7"
 # The number of classes to use.
 num_classes: 20
 # The number of workers for tf.data.Dataset.map().
@@ -18,6 +18,6 @@ num_parallel_calls: 10
 prefetch_buffer_size: 10
 # The prefix path to the ckpt files to load from.
 ckpt_path: "tmp/2018-08-04\ 23:55:10.251645/ckpts/00000014"
-# Path to the cityscapes tfrecord data directory.
-# The data should be created by sss.data.tfrecord.TFRecordWriter.
-tfdata_dir: "/home/ubuntu/workspace/local_data/cityscapes/tfrecord"
+# Path to the VOC2012 tfrecord data directory.
+# The data should be created by sss.data.tfrecord.write_tfrecord.
+tfdata_dir: "/home/ubuntu/workspace/local_data/voc/VOCdevkit/VOC2012/tfrecord"

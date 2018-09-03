@@ -13,12 +13,12 @@ TensorFlow-based semantic segmentation codes.
 
 ## Prepare .tfrecord data
 This repo only assumes .tfrecord format data.  
-The .tfrecord data should be created by `scripts/${data_name}_write.py`.  
+The .tfrecord data should be created by `scripts/write_tfrecord_${data_name}.py`.  
 
 ## Training
-You can train model by `scripts/${model_name}_${data_name}_trainer.py`.  
-Example parameters are defined in `scripts/params/${model_name}_${data_name}_train_params.yaml`.  
+You can train model by `scripts/trainer_${model_name}_${data_name}.py`.  
+Example parameters are defined in `scripts/params/train_params_${model_name}_${data_name}.yaml`.  
 
 ## Prediction
-You can run model inference by `scripts/${model_name}_${data_name}_predictor.py`.  
-Example parameters are defined in `scripts/params/${model_name}_${data_name}_predict_params.yaml`.  
+You can run model inference by `scripts/predictor_${model_name}_${data_name}.py`.  
+Example parameters are defined in `scripts/params/predict_params_${model_name}_${data_name}.yaml`.  
