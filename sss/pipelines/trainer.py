@@ -58,30 +58,34 @@ class Trainer:
         If it's None, use 1 to equally weight classes.
     num_epochs: int, default: 200
         The number epochs to train.
-    evaluate_freq: int, default: 10
-        Evaluate model by validation dataset and compute metrics
-        every @p evaluate_freq epochs.
+    evaluate_epochs: int, default: 10
+        Evaluate model by validation dataset and save the session
+        every @p evaluate_epochs epochs.
+    verbose_steps: int, default: 10
+        Show metric every @p verbose_step.
     resume_path: str, default: None
         The path to resume session from.
+    finetune_from: str, default: None
+        If specified, resume only model weights from the architecture.
     """
 
-    def __init__(
-            self,
-            model,
-            num_classes,
-            train_iterator,
-            val_iterator,
-            loss_fn,
-            optimizer,
-            global_step,
-            color_map_fn,
-            save_dir,
-            train_class_weights=None,
-            val_class_weights=None,
-            num_epochs=200,
-            evaluate_freq=10,
-            resume_path=None,
-    ):
+    def __init__(self,
+                 model,
+                 num_classes,
+                 train_iterator,
+                 val_iterator,
+                 loss_fn,
+                 optimizer,
+                 global_step,
+                 color_map_fn,
+                 save_dir,
+                 train_class_weights=None,
+                 val_class_weights=None,
+                 num_epochs=200,
+                 evaluate_epochs=10,
+                 verbose_steps=10,
+                 resume_path=None,
+                 finetune_from=None):
         self.logger = logging.getLogger(__name__)
 
         self.model = model
@@ -100,8 +104,10 @@ class Trainer:
         self.color_map_fn = color_map_fn
         self.save_dir = save_dir
         self.num_epochs = num_epochs
-        self.evaluate_freq = evaluate_freq
+        self.evaluate_epochs = evaluate_epochs
+        self.verbose_steps = verbose_steps
         self.resume_path = resume_path
+        self.finetune_from = finetune_from
 
         # Inspect inputs.
         if hasattr(model, '__call__') is False:
@@ -148,7 +154,7 @@ class Trainer:
             var_list=tf.trainable_variables(scope='model'),
             global_step=self.global_step)
 
-        # Epoch ops and a savor should live in cpu.
+        # Epoch ops and a saver should live in cpu.
         with tf.device('/cpu'):
             # In the training loop, it will increment epoch first.
             # So set -1 as the initial value to start from 0.
@@ -169,9 +175,6 @@ class Trainer:
                         name,
                         class_weights=None,
                         ignore_id=255):
-        with tf.variable_scope('model', reuse=tf.AUTO_REUSE):
-            logits = self.model(image)
-            predictions = tf.argmax(logits, axis=3)
         """Compute necessary metics: loss, weights, IoU, and summaries.
 
         Parameters
@@ -217,6 +220,9 @@ class Trainer:
         epoch_summary_op:
             Operator to compute metrics for each epoch.
         """
+        with tf.variable_scope('model', reuse=tf.AUTO_REUSE):
+            logits = self.model(image)
+            predictions = tf.argmax(logits, axis=3)
 
         # Metric computations should live in cpu.
         with tf.device('cpu:0'):
@@ -310,9 +316,13 @@ class Trainer:
             TensorFlow session to run train loop.
         """
         if self.resume_path:
-            self.saver.restore(sess, self.resume_path)
-            self.logger.info('The session restored from {}.'.format(
-                self.resume_path))
+            if self.finetune_from:
+                self.model._restore_model_variables(sess, self.resume_path, self.finetune_from)
+                self.logger.info('Finetune from {}.'.format(self.finetune_from))
+            else:
+                self.saver.restore(sess, self.resume_path)
+                self.logger.info('The session restored from {}.'.format(
+                    self.resume_path))
 
         self.logger.info('Start training.')
         summary_writer = tf.summary.FileWriter(self.log_dir, sess.graph)
@@ -322,37 +332,40 @@ class Trainer:
 
             sess.run((self.train_iterator.initializer,
                       self.train_metric_reset_op))
-            if (ep + 1) % self.evaluate_freq == 0:
-                step_op = (self.train_mean_loss_update_op,
-                           self.train_mean_iou_update_op,
-                           self.train_step_summary_op, self.train_op)
-            else:
-                step_op = self.train_op
+
+            step_op = (self.global_step, self.train_step_summary_op,
+                       self.train_mean_loss_update_op,
+                       self.train_mean_iou_update_op, self.train_op)
 
             start = time.clock()
             while True:
                 try:
                     out = sess.run(step_op)
+                    step = out[0]
+                    if step % self.verbose_steps == 0:
+                        train_mloss, train_miou = sess.run(
+                            (self.train_mean_loss, self.train_mean_iou))
+                        self.logger.info(
+                            'Train step: {}, mean loss: {:06f},\tmean iou: {:06f}'.
+                            format(step, train_mloss, train_miou))
                 except tf.errors.OutOfRangeError:
                     break
             proc_time = time.clock() - start
 
-            self.logger.info('Train epoch: {},\tproc time: {:06f}'.format(
-                ep, proc_time))
+            # Avoid sess.run(self.train_step_summary_op) here, otherwise get OutOfRangeError.
+            train_step_summary = out[1]
+            train_mloss, train_miou, train_epoch_summary = sess.run(
+                (self.train_mean_loss, self.train_mean_iou,
+                 self.train_epoch_summary_op))
+            self.logger.info(
+                'Train epoch: {},\tproc time: {:06f}\tmean loss: {:06f},\ttrain mean IoU: {:06f}'.
+                format(ep, proc_time, train_mloss, train_miou))
+            summary_writer.add_summary(train_step_summary, ep)
+            summary_writer.add_summary(train_epoch_summary, ep)
 
-            if (ep + 1) % self.evaluate_freq == 0:
-                _, _, train_step_summary, _ = out
-                train_mloss, train_miou, train_epoch_summary = sess.run(
-                    (self.train_mean_loss, self.train_mean_iou,
-                     self.train_epoch_summary_op))
-                self.logger.info(
-                    'Train mean loss: {:06f},\ttrain mean IoU: {:06f}'.format(
-                        train_mloss, train_miou))
-                summary_writer.add_summary(train_step_summary, ep)
-                summary_writer.add_summary(train_epoch_summary, ep)
-
+            if (ep + 1) % self.evaluate_epochs == 0:
                 with tf.device('/cpu'):
-                    save_path = '{:08d}'.format(ep)
+                    save_path = '{:08d}.ckpt'.format(ep)
                     self.saver.save(sess, os.path.join(self.ckpt_dir,
                                                        save_path))
                     self.logger.info('The session saved')

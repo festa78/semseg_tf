@@ -203,29 +203,12 @@ class FCN(Common):
                     bias=True,
                     name='score_pool3')
 
-    @staticmethod
-    def restore_vgg_weights(sess, vgg_pretrain_ckpt_path, scope_prefix='/'):
-        """Restore pretrained vgg weights.
-        Parameters
-        ----------
-        sess: tf.Session()
-            The current session.
-        vgg_pretrain_ckpy_path: str
-            The path to the VGG weights ckpt file.
-        """
-        # Make the dictionary to correspond variables between fcn and vgg.
-        var_list = {}
-        var_model = tf.get_collection(
-            key=tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_prefix + 'fcn')
-        for var in var_model:
-            if 'score' not in var.name:
-                var_list[var.name.replace(scope_prefix + 'fcn',
-                                          'vgg_16')[:-2]] = var
-        vgg_saver = tf.train.Saver(var_list=var_list)
-        vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
-
     def __call__(self, x):
         """Forward the input tensor through the network.
+        Managed by variable_scope to know which model includes
+        which variable.
+        TODO: make variable_scope shorter but do the same.
+
         Parameters
         ----------
         x: (N, H, W, C) tf.Tensor
@@ -236,77 +219,84 @@ class FCN(Common):
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        with tf.variable_scope('fcn', reuse=tf.AUTO_REUSE):
-            x_size = tf.shape(x)
-            out = self.conv1_1(x)
-            out = self.relu1_1(out)
-            out = self.conv1_2(out)
-            out = self.relu1_2(out)
-            out = self.pool1(out)
+        x_size = tf.shape(x)
+        with tf.variable_scope('fcn8', reuse=tf.AUTO_REUSE):
+            with tf.variable_scope('fcn16', reuse=tf.AUTO_REUSE):
+                with tf.variable_scope('fcn32', reuse=tf.AUTO_REUSE):
+                    with tf.variable_scope('vgg_16', reuse=tf.AUTO_REUSE):
+                        out = self.conv1_1(x)
+                        out = self.relu1_1(out)
+                        out = self.conv1_2(out)
+                        out = self.relu1_2(out)
+                        out = self.pool1(out)
 
-            out = self.conv2_1(out)
-            out = self.relu2_1(out)
-            out = self.conv2_2(out)
-            out = self.relu2_2(out)
-            out = self.pool2(out)
+                        out = self.conv2_1(out)
+                        out = self.relu2_1(out)
+                        out = self.conv2_2(out)
+                        out = self.relu2_2(out)
+                        out = self.pool2(out)
 
-            out = self.conv3_1(out)
-            out = self.relu3_1(out)
-            out = self.conv3_2(out)
-            out = self.relu3_2(out)
-            out = self.conv3_3(out)
-            out = self.relu3_3(out)
-            out = self.pool3(out)
+                        out = self.conv3_1(out)
+                        out = self.relu3_1(out)
+                        out = self.conv3_2(out)
+                        out = self.relu3_2(out)
+                        out = self.conv3_3(out)
+                        out = self.relu3_3(out)
+                        out = self.pool3(out)
 
-            if self.mode == 'fcn8':
-                pool3 = out
+                        if self.mode == 'fcn8':
+                            pool3 = out
 
-            out = self.conv4_1(out)
-            out = self.relu4_1(out)
-            out = self.conv4_2(out)
-            out = self.relu4_2(out)
-            out = self.conv4_3(out)
-            out = self.relu4_3(out)
-            out = self.pool4(out)
+                        out = self.conv4_1(out)
+                        out = self.relu4_1(out)
+                        out = self.conv4_2(out)
+                        out = self.relu4_2(out)
+                        out = self.conv4_3(out)
+                        out = self.relu4_3(out)
+                        out = self.pool4(out)
 
-            if self.mode in ('fcn16', 'fcn8'):
-                pool4 = out
+                        if self.mode in ('fcn16', 'fcn8'):
+                            pool4 = out
 
-            out = self.conv5_1(out)
-            out = self.relu5_1(out)
-            out = self.conv5_2(out)
-            out = self.relu5_2(out)
-            out = self.conv5_3(out)
-            out = self.relu5_3(out)
-            out = self.pool5(out)
+                        out = self.conv5_1(out)
+                        out = self.relu5_1(out)
+                        out = self.conv5_2(out)
+                        out = self.relu5_2(out)
+                        out = self.conv5_3(out)
+                        out = self.relu5_3(out)
+                        out = self.pool5(out)
 
-            out = self.fc6(out)
-            out = self.relu6(out)
-            out = self.dropout6(out)
+                        out = self.fc6(out)
+                        out = self.relu6(out)
+                        out = self.dropout6(out)
 
-            out = self.fc7(out)
-            out = self.relu7(out)
-            out = self.dropout7(out)
+                        out = self.fc7(out)
+                        out = self.relu7(out)
+                        out = self.dropout7(out)
+                    # vgg_16
 
-            out = self.score_fr(out)
+                    out = self.score_fr(out)
+                    if self.mode == 'fcn32':
+                        out = self.upscore32(out, x_size)
+                        return out
+                # fcn32
 
-            if self.mode == 'fcn32':
-                out = self.upscore32(out, x_size)
-                return out
-
-            if self.mode in ('fcn16', 'fcn8'):
                 out2 = self.score_pool4(pool4 * 0.01)
                 out = self.upscore2(out, tf.shape(out2))
                 out = tf.add(out, out2)
-                if self.mode == 'fcn8':
-                    out2 = self.score_pool3(pool3 * 0.0001)
-                    out = self.upscore_pool4(out, tf.shape(out2))
-                    out = tf.add(out, out2)
-                    out = self.upscore8(out, x_size)
+                if self.mode == 'fcn16':
+                    out = self.upscore16(out, x_size)
                     return out
+            # fcn16
 
-                out = self.upscore16(out, x_size)
-                return out
+            out2 = self.score_pool3(pool3 * 0.0001)
+            out = self.upscore_pool4(out, tf.shape(out2))
+            out = tf.add(out, out2)
+            out = self.upscore8(out, x_size)
+        # fcn32
+
+        return out
+
 
 
 def fcn32(num_classes):

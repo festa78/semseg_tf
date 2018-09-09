@@ -44,10 +44,14 @@ power: 0.9
 # for polynomial learning rate.
 num_train_samples: 3750
 # Evaluate model by validation dataset and compute metrics
-# every @p evaluate_freq epochs.
-evaluate_freq: 1
+# every @p evaluate_epochs epochs.
+evaluate_epochs: 1
+# Show metric every @p verbose_step step.
+verbose_steps: 10
 # The path of .ckpt file to resume session.
-resume_path:
+resume_path: ""
+# If specified, resume only model weights from the architecture.
+finetune_from: ""
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
 # Path to the cityscapes tfrecord data directory.

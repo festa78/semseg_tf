@@ -8,7 +8,7 @@ test_resized_height: 512
 test_resized_width: 1024
 # The directory path to save outputs.
 save_dir: "./outputs"
-# which model to use from dilation7, dilation8, and dilation10
+# which model to use from frontend, dilation7, dilation8, and dilation10
 mode: "dilation10"
 # The number of classes to use.
 num_classes: 20

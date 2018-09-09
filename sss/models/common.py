@@ -15,18 +15,43 @@ class Common:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         # Used to record size of each layer outputs.
-        self.outsizes = OrderedDict()
+        self.var_list = OrderedDict()
 
-    def print_outsizes(self):
-        self.logger.info('name, size')
-        for name, size in self.outsizes.items():
-            self.logger.info(name, size)
+    @staticmethod
+    def _restore_model_variables(sess, ckpt_path , model_name):
+        """Get a list of model variables of @p model_name
+        and restore its weights from a checkpoint.
+        Parameters
+        ----------
+        sess: tf.Session()
+            The current session.
+        ckpy_path: str
+            The path to the ckpt file.
+        model_name: str
+            The name of model to restore.
+        """
+        # Make the dictionary to correspond variables.
+        var_list = {}
+        var_model = tf.get_collection(
+            key=tf.GraphKeys.TRAINABLE_VARIABLES,
+            scope='model')
+        for var in var_model:
+            if model_name in var.name:
+                name = var.name[:-2]
+                # Special case for vgg_16.
+                if model_name == 'vgg_16':
+                    name = name[name.find(model_name):]
+                var_list[name] = var
+        saver = tf.train.Saver(var_list=var_list)
+        saver.restore(sess, ckpt_path)
 
-    def _make_conv_weights(self, shape, std):
+    @staticmethod
+    def _make_conv_weights(shape, std):
         init_op = tf.truncated_normal_initializer(stddev=std)
         return tf.get_variable('weights', shape=shape, initializer=init_op)
 
-    def _make_conv_biases(self, out_channels, constant):
+    @staticmethod
+    def _make_conv_biases(out_channels, constant):
         init_op = tf.constant_initializer(constant)
         return tf.get_variable(
             name='biases', shape=[out_channels], initializer=init_op)
@@ -48,7 +73,7 @@ class Common:
                 if bias is True:
                     biases = self._make_conv_biases(out_channels, 0.)
                     conv = tf.nn.bias_add(conv, biases)
-            self.outsizes[name] = tf.shape(conv)
+            self.var_list[name] = tf.shape(conv)
             return conv
 
         return conv2d
@@ -71,7 +96,7 @@ class Common:
                 if bias is True:
                     biases = self._make_conv_biases(out_channels, 0.)
                     conv = tf.nn.bias_add(conv, biases)
-            self.outsizes[name] = tf.shape(conv)
+            self.var_list[name] = tf.shape(conv)
             return conv
 
         return atrous_conv2d
@@ -84,7 +109,7 @@ class Common:
             with tf.variable_scope(name):
                 pool = tf.nn.avg_pool(
                     in_features, kernel_sizes, strides, padding='SAME')
-            self.outsizes[name] = tf.shape(pool)
+            self.var_list[name] = tf.shape(pool)
             return pool
 
         return avg_pool2d
@@ -97,7 +122,7 @@ class Common:
             with tf.variable_scope(name):
                 pool = tf.nn.max_pool(
                     in_features, kernel_sizes, strides, padding='SAME')
-            self.outsizes[name] = tf.shape(pool)
+            self.var_list[name] = tf.shape(pool)
             return pool
 
         return max_pool2d
@@ -111,7 +136,7 @@ class Common:
                     momentum=0.95,
                     epsilon=1.e-5,
                     training=training)
-            self.outsizes[name] = tf.shape(bn)
+            self.var_list[name] = tf.shape(bn)
             return bn
 
         return bn2d
@@ -121,7 +146,7 @@ class Common:
         def concat(in_features_list):
             with tf.variable_scope(name):
                 cat = tf.concat(axis=-1, values=in_features_list)
-            self.outsizes[name] = tf.shape(cat)
+            self.var_list[name] = tf.shape(cat)
             return cat
 
         return concat
@@ -131,7 +156,7 @@ class Common:
         def add(in_features1, in_features2):
             with tf.variable_scope(name):
                 a = tf.add(in_features1, in_features2)
-            self.outsizes[name] = tf.shape(a)
+            self.var_list[name] = tf.shape(a)
             return a
 
         return add
@@ -141,7 +166,7 @@ class Common:
         def relu(in_features):
             with tf.variable_scope(name):
                 rl = tf.nn.relu(in_features)
-            self.outsizes[name] = tf.shape(rl)
+            self.var_list[name] = tf.shape(rl)
             return rl
 
         return relu
@@ -151,7 +176,7 @@ class Common:
         def dropout(in_features):
             with tf.variable_scope(name):
                 drop = tf.nn.dropout(in_features, keep_prob=keep_prob)
-            self.outsizes[name] = tf.shape(drop)
+            self.var_list[name] = tf.shape(drop)
             return drop
 
         return dropout
@@ -188,7 +213,7 @@ class Common:
                 strides=strides,
                 padding='SAME')
 
-            self.outsizes[name] = tf.shape(conv_t)
+            self.var_list[name] = tf.shape(conv_t)
             return conv_t
 
         return upsample
@@ -198,7 +223,7 @@ class Common:
         def resize_bilinear(in_features, size):
             with tf.variable_scope(name):
                 rb = tf.image.resize_bilinear(in_features, size=size)
-            self.outsizes[name] = tf.shape(rb)
+            self.var_list[name] = tf.shape(rb)
             return rb
 
         return resize_bilinear

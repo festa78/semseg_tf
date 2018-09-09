@@ -575,79 +575,81 @@ class PSPNet(Common):
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        with tf.variable_scope('pspnet', reuse=tf.AUTO_REUSE):
-            x_size = tf.shape(x)[1:3]
-            out = self.conv1_1_3x3_s2(x)
-            out = self.conv1_1_3x3_s2_bn(out)
-            out = self.conv1_1_3x3_s2_relu(out)
-            out = self.conv1_2_3x3(out)
-            out = self.conv1_2_3x3_bn(out)
-            out = self.conv1_2_3x3_relu(out)
-            out = self.conv1_3_3x3(out)
-            out = self.conv1_3_3x3_bn(out)
-            out = self.conv1_3_3x3_relu(out)
-            out2 = self.pool1_3x3_s2(out)
+        x_size = tf.shape(x)[1:3]
+        with tf.variable_scope('pspnet101', reuse=tf.AUTO_REUSE):
+            with tf.variable_scope('pspnet50', reuse=tf.AUTO_REUSE):
+                out = self.conv1_1_3x3_s2(x)
+                out = self.conv1_1_3x3_s2_bn(out)
+                out = self.conv1_1_3x3_s2_relu(out)
+                out = self.conv1_2_3x3(out)
+                out = self.conv1_2_3x3_bn(out)
+                out = self.conv1_2_3x3_relu(out)
+                out = self.conv1_3_3x3(out)
+                out = self.conv1_3_3x3_bn(out)
+                out = self.conv1_3_3x3_relu(out)
+                out2 = self.pool1_3x3_s2(out)
 
-            out = self.conv2_1_1x1_proj(out2)
-            out = self.conv2_1_1x1_proj_bn(out)
+                out = self.conv2_1_1x1_proj(out2)
+                out = self.conv2_1_1x1_proj_bn(out)
 
-            out2 = self.conv2_1_block(out2)
-            out = self.conv2_1(out, out2)
-            out = self.conv2_1_relu(out)
+                out2 = self.conv2_1_block(out2)
+                out = self.conv2_1(out, out2)
+                out = self.conv2_1_relu(out)
 
-            out2 = self.conv2_2_block(out)
-            out = self.conv2_2(out, out2)
-            out = self.conv2_2_relu(out)
+                out2 = self.conv2_2_block(out)
+                out = self.conv2_2(out, out2)
+                out = self.conv2_2_relu(out)
 
-            out2 = self.conv2_3_block(out)
-            out = self.conv2_3(out, out2)
-            out2 = self.conv2_3_relu(out)
+                out2 = self.conv2_3_block(out)
+                out = self.conv2_3(out, out2)
+                out2 = self.conv2_3_relu(out)
 
-            out = self.conv3_1_1x1_proj(out2)
-            out = self.conv3_1_1x1_proj_bn(out)
+                out = self.conv3_1_1x1_proj(out2)
+                out = self.conv3_1_1x1_proj_bn(out)
 
-            out2 = self.conv3_1_block(out2)
-            out = self.conv3_1(out, out2)
-            out = self.conv3_1_relu(out)
+                out2 = self.conv3_1_block(out2)
+                out = self.conv3_1(out, out2)
+                out = self.conv3_1_relu(out)
 
-            out2 = self.conv3_2_block(out)
-            out = self.conv3_2(out, out2)
-            out = self.conv3_2_relu(out)
+                out2 = self.conv3_2_block(out)
+                out = self.conv3_2(out, out2)
+                out = self.conv3_2_relu(out)
 
-            out2 = self.conv3_3_block(out)
-            out = self.conv3_3(out, out2)
-            out = self.conv3_3_relu(out)
+                out2 = self.conv3_3_block(out)
+                out = self.conv3_3(out, out2)
+                out = self.conv3_3_relu(out)
 
-            out2 = self.conv3_4_block(out)
-            out = self.conv3_4(out, out2)
-            out2 = self.conv3_4_relu(out)
+                out2 = self.conv3_4_block(out)
+                out = self.conv3_4(out, out2)
+                out2 = self.conv3_4_relu(out)
 
-            out = self.conv4_1_1x1_proj(out2)
-            out = self.conv4_1_1x1_proj_bn(out)
+                out = self.conv4_1_1x1_proj(out2)
+                out = self.conv4_1_1x1_proj_bn(out)
 
-            out2 = self.conv4_1_block(out2)
-            out = self.conv4_1(out, out2)
-            out = self.conv4_1_relu(out)
+                out2 = self.conv4_1_block(out2)
+                out = self.conv4_1(out, out2)
+                out = self.conv4_1_relu(out)
 
-            out2 = self.conv4_2_block(out)
-            out = self.conv4_2(out, out2)
-            out = self.conv4_2_relu(out)
+                out2 = self.conv4_2_block(out)
+                out = self.conv4_2(out, out2)
+                out = self.conv4_2_relu(out)
 
-            out2 = self.conv4_3_block(out)
-            out = self.conv4_3(out, out2)
-            out = self.conv4_3_relu(out)
+                out2 = self.conv4_3_block(out)
+                out = self.conv4_3(out, out2)
+                out = self.conv4_3_relu(out)
 
-            out2 = self.conv4_4_block(out)
-            out = self.conv4_4(out, out2)
-            out = self.conv4_4_relu(out)
+                out2 = self.conv4_4_block(out)
+                out = self.conv4_4(out, out2)
+                out = self.conv4_4_relu(out)
 
-            out2 = self.conv4_5_block(out)
-            out = self.conv4_5(out, out2)
-            out = self.conv4_5_relu(out)
+                out2 = self.conv4_5_block(out)
+                out = self.conv4_5(out, out2)
+                out = self.conv4_5_relu(out)
 
-            out2 = self.conv4_6_block(out)
-            out = self.conv4_6(out, out2)
-            out = self.conv4_6_relu(out)
+                out2 = self.conv4_6_block(out)
+                out = self.conv4_6(out, out2)
+                out = self.conv4_6_relu(out)
+            # pspnet50
 
             if self.mode == 'pspnet101':
                 out2 = self.conv4_7_block(out)
@@ -719,36 +721,39 @@ class PSPNet(Common):
                 out2 = self.conv4_23_relu(out)
             # if self.mode == 'pspnet101' ends.
 
-            out = self.conv5_1_1x1_proj(out2)
-            out = self.conv5_1_1x1_proj_bn(out)
+            with tf.variable_scope('pspnet50', reuse=tf.AUTO_REUSE):
+                out = self.conv5_1_1x1_proj(out2)
+                out = self.conv5_1_1x1_proj_bn(out)
 
-            out2 = self.conv5_1_block(out2)
-            out = self.conv5_1(out, out2)
-            out = self.conv5_1_relu(out)
+                out2 = self.conv5_1_block(out2)
+                out = self.conv5_1(out, out2)
+                out = self.conv5_1_relu(out)
 
-            out2 = self.conv5_2_block(out)
-            out = self.conv5_2(out, out2)
-            out = self.conv5_2_relu(out)
+                out2 = self.conv5_2_block(out)
+                out = self.conv5_2(out, out2)
+                out = self.conv5_2_relu(out)
 
-            out2 = self.conv5_3_block(out)
-            out = self.conv5_3(out, out2)
-            out = self.conv5_3_relu(out)
+                out2 = self.conv5_3_block(out)
+                out = self.conv5_3(out, out2)
+                out = self.conv5_3_relu(out)
 
-            out_size = tf.shape(out)[1:3]
+                out_size = tf.shape(out)[1:3]
 
-            out2 = self.conv5_3_pool6(out, out_size)
-            out3 = self.conv5_3_pool3(out, out_size)
-            out4 = self.conv5_3_pool2(out, out_size)
-            out5 = self.conv5_3_pool1(out, out_size)
-            out = self.conv5_3_concat([out, out2, out3, out4, out5])
+                out2 = self.conv5_3_pool6(out, out_size)
+                out3 = self.conv5_3_pool3(out, out_size)
+                out4 = self.conv5_3_pool2(out, out_size)
+                out5 = self.conv5_3_pool1(out, out_size)
+                out = self.conv5_3_concat([out, out2, out3, out4, out5])
 
-            out = self.conv5_4(out)
-            out = self.conv5_4_bn(out)
-            out = self.conv5_4_relu(out)
-            out = self.conv5_4_dropout(out)
+                out = self.conv5_4(out)
+                out = self.conv5_4_bn(out)
+                out = self.conv5_4_relu(out)
+                out = self.conv5_4_dropout(out)
 
-            out = self.conv6(out)
-            out = self.conv6_interp(out, x_size)
+                out = self.conv6(out)
+                out = self.conv6_interp(out, x_size)
+            # pspnet50
+        # pspnet101
 
         return out
 

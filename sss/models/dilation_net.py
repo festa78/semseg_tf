@@ -18,9 +18,9 @@ class DilationNet(Common):
     num_classes: int
         The number of output classes.
     mode: str
-        Which model architecture to use from dilation7, dilation8, and dilation10.
+        Which model architecture to use from frontend, dilation7, dilation8, and dilation10.
     """
-    MODES = ('dilation7', 'dilation8', 'dilation10')
+    MODES = ('frontend', 'dilation7', 'dilation8', 'dilation10')
 
     def __init__(self, num_classes, mode='dilation10'):
         super().__init__()
@@ -155,85 +155,88 @@ class DilationNet(Common):
             bias=True,
             name='final')
 
-        # TODO: needs manual padding?
-        self.ctx_conv1_1 = self._make_conv2d(
-            out_channels=num_classes,
-            kernel_size=3,
-            stride=1,
-            bias=True,
-            name='ctx_conv1/ctx_conv1_1')
-        self.ctx_relu1_1 = self._make_relu(name='ctx_relu1/ctx_relu1_1')
-        self.ctx_conv1_2 = self._make_conv2d(
-            out_channels=num_classes,
-            kernel_size=3,
-            stride=1,
-            bias=True,
-            name='ctx_conv1/ctx_conv1_2')
-        self.ctx_relu1_2 = self._make_relu(name='ctx_relu1/ctx_relu1_2')
-
-        self.ctx_conv2_1 = self._make_atrous_conv2d(
-            out_channels=num_classes,
-            kernel_size=3,
-            atrous_rate=2,
-            bias=True,
-            name='ctx_conv2/ctx_conv2_1')
-        self.ctx_relu2_1 = self._make_relu(name='ctx_relu1/ctx_relu2_1')
-
-        self.ctx_conv3_1 = self._make_atrous_conv2d(
-            out_channels=num_classes,
-            kernel_size=3,
-            atrous_rate=4,
-            bias=True,
-            name='ctx_conv3/ctx_conv3_1')
-        self.ctx_relu3_1 = self._make_relu(name='ctx_relu1/ctx_relu3_1')
-
-        self.ctx_conv4_1 = self._make_atrous_conv2d(
-            out_channels=num_classes,
-            kernel_size=3,
-            atrous_rate=8,
-            bias=True,
-            name='ctx_conv4/ctx_conv4_1')
-        self.ctx_relu4_1 = self._make_relu(name='ctx_relu1/ctx_relu4_1')
-
-        if self.mode in ('dilation8', 'dilation10'):
-            self.ctx_conv5_1 = self._make_atrous_conv2d(
+        if self.mode != 'frontend':
+            # TODO: needs manual padding?
+            self.ctx_conv1_1 = self._make_conv2d(
                 out_channels=num_classes,
                 kernel_size=3,
-                atrous_rate=16,
+                stride=1,
                 bias=True,
-                name='ctx_conv5/ctx_conv5_1')
-            self.ctx_relu5_1 = self._make_relu(name='ctx_relu1/ctx_relu5_1')
+                name='ctx_conv1/ctx_conv1_1')
+            self.ctx_relu1_1 = self._make_relu(name='ctx_relu1/ctx_relu1_1')
+            self.ctx_conv1_2 = self._make_conv2d(
+                out_channels=num_classes,
+                kernel_size=3,
+                stride=1,
+                bias=True,
+                name='ctx_conv1/ctx_conv1_2')
+            self.ctx_relu1_2 = self._make_relu(name='ctx_relu1/ctx_relu1_2')
 
-            if self.mode == 'dilation10':
-                self.ctx_conv6_1 = self._make_atrous_conv2d(
+            self.ctx_conv2_1 = self._make_atrous_conv2d(
+                out_channels=num_classes,
+                kernel_size=3,
+                atrous_rate=2,
+                bias=True,
+                name='ctx_conv2/ctx_conv2_1')
+            self.ctx_relu2_1 = self._make_relu(name='ctx_relu1/ctx_relu2_1')
+
+            self.ctx_conv3_1 = self._make_atrous_conv2d(
+                out_channels=num_classes,
+                kernel_size=3,
+                atrous_rate=4,
+                bias=True,
+                name='ctx_conv3/ctx_conv3_1')
+            self.ctx_relu3_1 = self._make_relu(name='ctx_relu1/ctx_relu3_1')
+
+            self.ctx_conv4_1 = self._make_atrous_conv2d(
+                out_channels=num_classes,
+                kernel_size=3,
+                atrous_rate=8,
+                bias=True,
+                name='ctx_conv4/ctx_conv4_1')
+            self.ctx_relu4_1 = self._make_relu(name='ctx_relu1/ctx_relu4_1')
+
+            if self.mode in ('dilation8', 'dilation10'):
+                self.ctx_conv5_1 = self._make_atrous_conv2d(
                     out_channels=num_classes,
                     kernel_size=3,
-                    atrous_rate=32,
+                    atrous_rate=16,
                     bias=True,
-                    name='ctx_conv6/ctx_conv6_1')
-                self.ctx_relu6_1 = self._make_relu(name='ctx_relu1/ctx_relu6_1')
+                    name='ctx_conv5/ctx_conv5_1')
+                self.ctx_relu5_1 = self._make_relu(name='ctx_relu1/ctx_relu5_1')
 
-                self.ctx_conv7_1 = self._make_atrous_conv2d(
-                    out_channels=num_classes,
-                    kernel_size=3,
-                    atrous_rate=64,
-                    bias=True,
-                    name='ctx_conv7/ctx_conv7_1')
-                self.ctx_relu7_1 = self._make_relu(name='ctx_relu1/ctx_relu7_1')
+                if self.mode == 'dilation10':
+                    self.ctx_conv6_1 = self._make_atrous_conv2d(
+                        out_channels=num_classes,
+                        kernel_size=3,
+                        atrous_rate=32,
+                        bias=True,
+                        name='ctx_conv6/ctx_conv6_1')
+                    self.ctx_relu6_1 = self._make_relu(
+                        name='ctx_relu1/ctx_relu6_1')
 
-        self.ctx_fc1 = self._make_conv2d(
-            out_channels=num_classes,
-            kernel_size=3,
-            stride=1,
-            bias=True,
-            name='ctx_fc1')
-        self.ctx_fc1_relu = self._make_relu(name='ctx_fc1_relu')
-        self.ctx_final = self._make_conv2d(
-            out_channels=num_classes,
-            kernel_size=1,
-            stride=1,
-            bias=True,
-            name='ctx_final')
+                    self.ctx_conv7_1 = self._make_atrous_conv2d(
+                        out_channels=num_classes,
+                        kernel_size=3,
+                        atrous_rate=64,
+                        bias=True,
+                        name='ctx_conv7/ctx_conv7_1')
+                    self.ctx_relu7_1 = self._make_relu(
+                        name='ctx_relu1/ctx_relu7_1')
+
+            self.ctx_fc1 = self._make_conv2d(
+                out_channels=num_classes,
+                kernel_size=3,
+                stride=1,
+                bias=True,
+                name='ctx_fc1')
+            self.ctx_fc1_relu = self._make_relu(name='ctx_fc1_relu')
+            self.ctx_final = self._make_conv2d(
+                out_channels=num_classes,
+                kernel_size=1,
+                stride=1,
+                bias=True,
+                name='ctx_final')
 
         # TODO: should not upsample for diltaion7 and dilation8?
         self.ctx_upsample = self._make_upsample(
@@ -242,30 +245,12 @@ class DilationNet(Common):
             stride=8,
             name='ctx_upsample')
 
-    @staticmethod
-    def restore_vgg_weights(sess, vgg_pretrain_ckpt_path, scope_prefix='/'):
-        """Restore pretrained vgg weights.
-        Parameters
-        ----------
-        sess: tf.Session()
-            The current session.
-        vgg_pretrain_ckpy_path: str
-            The path to the VGG weights ckpt file.
-        """
-        # Make the dictionary to correspond variables between fcn and vgg.
-        var_list = {}
-        var_model = tf.get_collection(
-            key=tf.GraphKeys.TRAINABLE_VARIABLES,
-            scope=scope_prefix + 'dilation')
-        for var in var_model:
-            if 'final' not in var.name and 'ctx' not in var.name:
-                var_list[var.name.replace(scope_prefix + 'dilation',
-                                          'vgg_16')[:-2]] = var
-        vgg_saver = tf.train.Saver(var_list=var_list)
-        vgg_saver.restore(sess, vgg_pretrain_ckpt_path)
-
     def __call__(self, x):
         """Forward the input tensor through the network.
+        Managed by variable_scope to know which model includes
+        which variable.
+        TODO: make variable_scope shorter but do the same.
+
         Parameters
         ----------
         x: (N, H, W, C) tf.Tensor
@@ -276,76 +261,91 @@ class DilationNet(Common):
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        with tf.variable_scope('dilation', reuse=tf.AUTO_REUSE):
-            x_size = tf.shape(x)
-            out = self.conv1_1(x)
-            out = self.relu1_1(out)
-            out = self.conv1_2(out)
-            out = self.relu1_2(out)
-            out = self.pool1(out)
+        x_size = tf.shape(x)
+        with tf.variable_scope('dilation10', reuse=tf.AUTO_REUSE):
+            with tf.variable_scope('dilation8', reuse=tf.AUTO_REUSE):
+                with tf.variable_scope('dilation7', reuse=tf.AUTO_REUSE):
+                    with tf.variable_scope('frontend', reuse=tf.AUTO_REUSE):
+                        with tf.variable_scope('vgg_16', reuse=tf.AUTO_REUSE):
+                            out = self.conv1_1(x)
+                            out = self.relu1_1(out)
+                            out = self.conv1_2(out)
+                            out = self.relu1_2(out)
+                            out = self.pool1(out)
 
-            out = self.conv2_1(out)
-            out = self.relu2_1(out)
-            out = self.conv2_2(out)
-            out = self.relu2_2(out)
-            out = self.pool2(out)
+                            out = self.conv2_1(out)
+                            out = self.relu2_1(out)
+                            out = self.conv2_2(out)
+                            out = self.relu2_2(out)
+                            out = self.pool2(out)
 
-            out = self.conv3_1(out)
-            out = self.relu3_1(out)
-            out = self.conv3_2(out)
-            out = self.relu3_2(out)
-            out = self.conv3_3(out)
-            out = self.relu3_3(out)
-            out = self.pool3(out)
+                            out = self.conv3_1(out)
+                            out = self.relu3_1(out)
+                            out = self.conv3_2(out)
+                            out = self.relu3_2(out)
+                            out = self.conv3_3(out)
+                            out = self.relu3_3(out)
+                            out = self.pool3(out)
 
-            out = self.conv4_1(out)
-            out = self.relu4_1(out)
-            out = self.conv4_2(out)
-            out = self.relu4_2(out)
-            out = self.conv4_3(out)
-            out = self.relu4_3(out)
+                            out = self.conv4_1(out)
+                            out = self.relu4_1(out)
+                            out = self.conv4_2(out)
+                            out = self.relu4_2(out)
+                            out = self.conv4_3(out)
+                            out = self.relu4_3(out)
 
-            out = self.conv5_1(out)
-            out = self.relu5_1(out)
-            out = self.conv5_2(out)
-            out = self.relu5_2(out)
-            out = self.conv5_3(out)
-            out = self.relu5_3(out)
+                            out = self.conv5_1(out)
+                            out = self.relu5_1(out)
+                            out = self.conv5_2(out)
+                            out = self.relu5_2(out)
+                            out = self.conv5_3(out)
+                            out = self.relu5_3(out)
 
-            out = self.fc6(out)
-            out = self.relu6(out)
-            out = self.dropout6(out)
+                            out = self.fc6(out)
+                            out = self.relu6(out)
+                            out = self.dropout6(out)
 
-            out = self.fc7(out)
-            out = self.relu7(out)
-            out = self.dropout7(out)
+                            out = self.fc7(out)
+                            out = self.relu7(out)
+                            out = self.dropout7(out)
+                        # vgg_16
 
-            out = self.final(out)
+                        out = self.final(out)
+                        if self.mode == 'frontend':
+                            out = self.ctx_upsample(out, x_size)
+                            return out
+                    # frontend
 
-            out = self.ctx_conv1_1(out)
-            out = self.ctx_relu1_1(out)
-            out = self.ctx_conv1_2(out)
-            out = self.ctx_relu1_2(out)
+                    out = self.ctx_conv1_1(out)
+                    out = self.ctx_relu1_1(out)
+                    out = self.ctx_conv1_2(out)
+                    out = self.ctx_relu1_2(out)
 
-            out = self.ctx_conv2_1(out)
-            out = self.ctx_relu2_1(out)
+                    out = self.ctx_conv2_1(out)
+                    out = self.ctx_relu2_1(out)
 
-            out = self.ctx_conv3_1(out)
-            out = self.ctx_relu3_1(out)
+                    out = self.ctx_conv3_1(out)
+                    out = self.ctx_relu3_1(out)
 
-            out = self.ctx_conv4_1(out)
-            out = self.ctx_relu4_1(out)
+                    out = self.ctx_conv4_1(out)
+                    out = self.ctx_relu4_1(out)
+                    if self.mode == 'dilation7':
+                        out = self.ctx_upsample(out, x_size)
+                        return out
+                # dilation7
 
-            if self.mode in ('dilation8', 'dilation10'):
                 out = self.ctx_conv5_1(out)
                 out = self.ctx_relu5_1(out)
+                if self.mode == 'dilation8':
+                    out = self.ctx_upsample(out, x_size)
+                    return out
+            # dilation8
 
-                if self.mode == 'dilation10':
-                    out = self.ctx_conv6_1(out)
-                    out = self.ctx_relu6_1(out)
+            out = self.ctx_conv6_1(out)
+            out = self.ctx_relu6_1(out)
 
-                    out = self.ctx_conv7_1(out)
-                    out = self.ctx_relu7_1(out)
+            out = self.ctx_conv7_1(out)
+            out = self.ctx_relu7_1(out)
 
             out = self.ctx_fc1(out)
             out = self.ctx_fc1_relu(out)
@@ -353,8 +353,13 @@ class DilationNet(Common):
             out = self.ctx_final(out)
 
             out = self.ctx_upsample(out, x_size)
+        # dilation10
 
         return out
+
+
+def frontend(num_classes):
+    return DilationNet(num_classes, 'frontend')
 
 
 def dilation7(num_classes):

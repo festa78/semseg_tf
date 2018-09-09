@@ -7,7 +7,7 @@ import tensorflow as tf
 import project_root
 
 from sss.models.fcn import fcn32, fcn16, fcn8
-from sss.models.dilation_net import dilation7, dilation8, dilation10
+from sss.models.dilation_net import frontend, dilation7, dilation8, dilation10
 from sss.models.psp_net import pspnet50, pspnet101
 from sss.utils.losses import cross_entropy
 
@@ -18,12 +18,11 @@ def test_network_update():
     """
     IMAGE_SIZE = 224
     NUM_CLASSES = 5
-    MODELS = (fcn32, fcn16, fcn8, dilation7, dilation8, dilation10, pspnet50, pspnet101)
+    MODELS = (fcn32, fcn16, fcn8, frontend, dilation7, dilation8, dilation10, pspnet50, pspnet101)
     np.random.seed(1234)
     tf.set_random_seed(1234)
 
     for model in MODELS:
-        print(model)
         with tf.Graph().as_default():
             with tf.device("/cpu:0"):
                 dummy_in = tf.placeholder(tf.float32,

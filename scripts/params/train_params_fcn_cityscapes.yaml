@@ -43,18 +43,23 @@ power: 0.9
 # The number of training samples. Use to compute decay steps
 # for polynomial learning rate.
 num_train_samples: 3750
-# Evaluate model by validation dataset and compute metrics
-# every @p evaluate_freq epochs.
-evaluate_freq: 1
+# Evaluate model by validation dataset and save the session
+# every @p evaluate_epochs epochs.
+evaluate_epochs: 1
+# Show metric every @p verbose_step step.
+verbose_steps: 10
 # The path of .ckpt file to resume session.
-resume_path:
+# If you use vgg_16, download weights from here:
+# http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz
+resume_path: "/home/ubuntu/workspace/local_data/vgg_16.ckpt"
+# If specified, resume only model weights from the architecture.
+# If you use vgg_16 wegihts, set 'vgg_16'.
+finetune_from: 'vgg_16'
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
 # Path to the cityscapes tfrecord data directory.
 # The data should be created by sss.data.tfrecord.write_tfrecord.
 tfdata_dir: "/home/ubuntu/workspace/local_data/cityscapes/tfrecord"
-# The path to pretrain model of vgg.
-vgg_pretrain_ckpt_path: "/home/ubuntu/workspace/local_data/vgg_16.ckpt"
 # The 19 classes trainId class weights to use for weighted
 # train cross entropy, loss, and iou computation.
 # Values are computed from inverse class distribution.

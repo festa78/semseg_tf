@@ -16,7 +16,7 @@ def _setup_trainer(tmpdir):
     NUM_EPOCHS = 2
     CLASS_WEIGHTS = tf.constant(
         np.array([.1, .3, .2, .1, .3], dtype=np.float), dtype=tf.float32)
-    EVALUATE_FREQ = 10
+    EVALUATE_EPOCHS = 10
 
     with tf.device('/cpu:0'):
         train_batch = {
@@ -72,7 +72,7 @@ def _setup_trainer(tmpdir):
             str(tmpdir),
             train_class_weights=CLASS_WEIGHTS,
             num_epochs=NUM_EPOCHS,
-            evaluate_freq=EVALUATE_FREQ)
+            evaluate_epochs=EVALUATE_EPOCHS)
 
     return dut
 

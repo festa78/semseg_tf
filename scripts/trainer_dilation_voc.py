@@ -17,7 +17,7 @@ import project_root
 from sss.data.voc import id2trainid_tensor, trainid2color_tensor
 from sss.data.data_preprocessor import DataPreprocessor
 from sss.data.tfrecord import read_tfrecord
-from sss.models.dilation_net import dilation7, dilation8, dilation10
+import sss.models.dilation_net as dilation_net
 from sss.pipelines.trainer import Trainer
 from sss.utils.image_processing import random_crop_image_and_label, \
     random_flip_left_right_image_and_label, resize_image_and_label
@@ -52,6 +52,9 @@ if __name__ == '__main__':
     resume_fullpath = None
     if options['resume_path']:
         resume_fullpath = os.path.expanduser(options['resume_path'])
+    finetune_from = None
+    if options['finetune_from']:
+        finetune_from = options['finetune_from']
 
     # Data part should live in cpu.
     with tf.device('/cpu:0'):
@@ -166,15 +169,7 @@ if __name__ == '__main__':
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
     with tf.device('/gpu:0'):
-        if options['mode'] == 'dilation7':
-            model = dilation7(options['num_classes'])
-        elif options['mode'] == 'dilation7':
-            model = dilation7(options['num_classes'])
-        elif options['mode'] == 'dilation10':
-            model = dilation10(options['num_classes'])
-        else:
-            raise AttributeError('Mode {} does not exist.'.format(
-                options['mode']))
+        model = getattr(dilation_net, options['mode'])(options['num_classes'])
 
         # TODO: Add more optimizers.
         learning_rate = tf.train.polynomial_decay(
@@ -198,16 +193,13 @@ if __name__ == '__main__':
             color_map_fn=trainid2color_tensor,
             save_dir=save_dir_fullpath,
             resume_path=resume_fullpath,
+            finetune_from=finetune_from,
             train_class_weights=train_class_weights,
             val_class_weights=val_class_weights,
             num_epochs=options['num_epochs'],
-            evaluate_freq=options['evaluate_freq'])
+            evaluate_epochs=options['evaluate_epochs'],
+            verbose_steps=options['verbose_steps'])
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        if options['vgg_pretrain_ckpt_path'] and not resume_fullpath:
-            model.restore_vgg_weights(sess, options['vgg_pretrain_ckpt_path'],
-                                      'model/')
-            logging.info('The vgg weights loaded from {}.'.format(
-                options['vgg_pretrain_ckpt_path']))
         trainer.train(sess)
