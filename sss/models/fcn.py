@@ -157,17 +157,11 @@ class FCN(Common):
             name='score_fr')
 
         if self.mode == 'fcn32':
-            self.upscore32 = self._make_upsample(
-                out_channels=self.num_classes,
-                kernel_size=64,
-                stride=32,
+            self.upscore32 = self._make_resize_bilinear(
                 name='upscore32')
 
         if self.mode in ('fcn16', 'fcn8'):
-            self.upscore2 = self._make_upsample(
-                out_channels=self.num_classes,
-                kernel_size=4,
-                stride=2,
+            self.upscore2 = self._make_resize_bilinear(
                 name='upscore2')
 
             self.score_pool4 = self._make_conv2d(
@@ -178,22 +172,13 @@ class FCN(Common):
                 name='score_pool4')
 
             if self.mode == 'fcn16':
-                self.upscore16 = self._make_upsample(
-                    out_channels=self.num_classes,
-                    kernel_size=32,
-                    stride=16,
+                self.upscore16 = self._make_resize_bilinear(
                     name='upscore16')
             else:
-                self.upscore_pool4 = self._make_upsample(
-                    out_channels=self.num_classes,
-                    kernel_size=4,
-                    stride=2,
+                self.upscore_pool4 = self._make_resize_bilinear(
                     name='upscore_pool4')
 
-                self.upscore8 = self._make_upsample(
-                    out_channels=self.num_classes,
-                    kernel_size=16,
-                    stride=8,
+                self.upscore8 = self._make_resize_bilinear(
                     name='upscore8')
 
                 self.score_pool3 = self._make_conv2d(
@@ -219,7 +204,7 @@ class FCN(Common):
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        x_size = tf.shape(x)
+        x_size = tf.shape(x)[1:3]
         with tf.variable_scope('fcn8', reuse=tf.AUTO_REUSE):
             with tf.variable_scope('fcn16', reuse=tf.AUTO_REUSE):
                 with tf.variable_scope('fcn32', reuse=tf.AUTO_REUSE):
@@ -282,7 +267,7 @@ class FCN(Common):
                 # fcn32
 
                 out2 = self.score_pool4(pool4 * 0.01)
-                out = self.upscore2(out, tf.shape(out2))
+                out = self.upscore2(out, tf.shape(out2)[1:3])
                 out = tf.add(out, out2)
                 if self.mode == 'fcn16':
                     out = self.upscore16(out, x_size)
@@ -290,7 +275,7 @@ class FCN(Common):
             # fcn16
 
             out2 = self.score_pool3(pool3 * 0.0001)
-            out = self.upscore_pool4(out, tf.shape(out2))
+            out = self.upscore_pool4(out, tf.shape(out2)[1:3])
             out = tf.add(out, out2)
             out = self.upscore8(out, x_size)
         # fcn32

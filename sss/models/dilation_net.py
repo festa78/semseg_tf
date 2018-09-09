@@ -239,10 +239,7 @@ class DilationNet(Common):
                 name='ctx_final')
 
         # TODO: should not upsample for diltaion7 and dilation8?
-        self.ctx_upsample = self._make_upsample(
-            out_channels=self.num_classes,
-            kernel_size=16,
-            stride=8,
+        self.ctx_upsample = self._make_resize_bilinear(
             name='ctx_upsample')
 
     def __call__(self, x):
@@ -261,7 +258,7 @@ class DilationNet(Common):
         out: (N, H, W, C) tf.Tensor
             The output tensor of the network.
         """
-        x_size = tf.shape(x)
+        x_size = tf.shape(x)[1:3]
         with tf.variable_scope('dilation10', reuse=tf.AUTO_REUSE):
             with tf.variable_scope('dilation8', reuse=tf.AUTO_REUSE):
                 with tf.variable_scope('dilation7', reuse=tf.AUTO_REUSE):

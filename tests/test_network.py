@@ -18,7 +18,8 @@ def test_network_update():
     """
     IMAGE_SIZE = 224
     NUM_CLASSES = 5
-    MODELS = (fcn32, fcn16, fcn8, frontend, dilation7, dilation8, dilation10, pspnet50, pspnet101)
+    # MODELS = (fcn32, fcn16, fcn8, frontend, dilation7, dilation8, dilation10, pspnet50, pspnet101)
+    MODELS = (pspnet50, pspnet101)
     np.random.seed(1234)
     tf.set_random_seed(1234)
 

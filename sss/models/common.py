@@ -181,43 +181,6 @@ class Common:
 
         return dropout
 
-    def _make_upsample(self, out_channels, kernel_size, stride, name):
-        strides = [1, stride, stride, 1]
-
-        def upsample(in_features, shape):
-            in_shape = tf.shape(in_features)
-            out_shape = tf.stack([shape[0], shape[1], shape[2], out_channels])
-
-            # Use fixed weights for bilinear upsampling.
-            factor = (kernel_size + 1) // 2
-            if kernel_size % 2 == 1:
-                center = factor - 1
-            else:
-                center = factor - 0.5
-            og = np.ogrid[:kernel_size, :kernel_size]
-            filt = (1 - abs(og[0] - center) / factor) * (
-                1 - abs(og[1] - center) / factor)
-
-            in_channels = in_features.get_shape()[3].value
-            weights = np.zeros(
-                (kernel_size, kernel_size, out_channels, in_channels),
-                dtype=np.float32)
-            weights[:, :,
-                    list(range(out_channels)),
-                    list(range(in_channels))] = filt[..., np.newaxis]
-            weights = tf.constant(weights, dtype=tf.float32)
-            conv_t = tf.nn.conv2d_transpose(
-                in_features,
-                weights,
-                out_shape,
-                strides=strides,
-                padding='SAME')
-
-            self.var_list[name] = tf.shape(conv_t)
-            return conv_t
-
-        return upsample
-
     def _make_resize_bilinear(self, name):
 
         def resize_bilinear(in_features, size):

@@ -17,7 +17,7 @@ train_crop_width: 224
 # The directory path to save logs and models.
 save_dir: "./tmp"
 # which model to use from fcn32, fcn16, and fcn8.
-mode: "fcn32"
+mode: "fcn8"
 # The number of epochs to train.
 num_epochs: 1500
 # The number of classes to use.

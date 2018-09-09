@@ -439,14 +439,10 @@ class PSPNet(Common):
         self.conv5_3_relu = self._make_relu(name='conv5_3/relu')
 
         if self.mode == 'pspnet50':
-            # self.conv5_3_pool1 = self._make_block2(
-            #     kernel_size=60, stride=60, name='conv5_3_pool1')
-            # self.conv5_3_pool2 = self._make_block2(
-            #     kernel_size=30, stride=30, name='conv5_3_pool2')
             self.conv5_3_pool1 = self._make_block2(
-                kernel_size=20, stride=20, name='conv5_3_pool1')
+                kernel_size=60, stride=60, name='conv5_3_pool1')
             self.conv5_3_pool2 = self._make_block2(
-                kernel_size=29, stride=29, name='conv5_3_pool2')
+                kernel_size=30, stride=30, name='conv5_3_pool2')
             self.conv5_3_pool3 = self._make_block2(
                 kernel_size=20, stride=20, name='conv5_3_pool3')
             self.conv5_3_pool6 = self._make_block2(

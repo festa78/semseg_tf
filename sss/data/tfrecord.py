@@ -5,7 +5,6 @@ import numpy as np
 import os
 import PIL.Image as Image
 import tensorflow as tf
-
 import tqdm
 
 
