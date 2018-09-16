@@ -13,8 +13,8 @@ import tensorflow as tf
 
 import project_root
 
-from sss.data.cityscapes import id2label
-from sss.data.tfrecord import read_tfrecord
+from src.data.cityscapes import id2label
+from src.data.tfrecord import read_tfrecord
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # Read from tfrecord format data made by sss.data.tfrecord.TFRecordWriter.
+    # Read from tfrecord format data made by src.data.tfrecord.TFRecordWriter.
     train_dataset = read_tfrecord(glob(os.path.expanduser(args.data_path)))
     next_element = train_dataset.make_one_shot_iterator().get_next()
 

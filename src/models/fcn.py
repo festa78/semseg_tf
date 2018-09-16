@@ -6,7 +6,7 @@ import numpy as np
 from tensorflow.contrib.slim.python.slim.nets import vgg
 import tensorflow as tf
 
-from sss.models.common import Common
+from src.models.common import Common
 
 
 class FCN(Common):

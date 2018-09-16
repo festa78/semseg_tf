@@ -4,7 +4,7 @@
 import numpy as np
 import tensorflow as tf
 
-from sss.data.data_preprocessor import DataPreprocessor
+from src.data.data_preprocessor import DataPreprocessor
 
 
 def test_process_image():

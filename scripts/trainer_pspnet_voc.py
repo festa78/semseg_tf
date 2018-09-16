@@ -14,14 +14,14 @@ import yaml
 
 import project_root
 
-from sss.data.voc import id2trainid_tensor, trainid2color_tensor
-from sss.data.data_preprocessor import DataPreprocessor
-from sss.data.tfrecord import read_tfrecord
-import sss.models.psp_net as psp_net
-from sss.pipelines.trainer import Trainer
-from sss.utils.image_processing import random_crop_image_and_label, \
+from src.data.voc import id2trainid_tensor, trainid2color_tensor
+from src.data.data_preprocessor import DataPreprocessor
+from src.data.tfrecord import read_tfrecord
+import src.models.psp_net as psp_net
+from src.pipelines.trainer import Trainer
+from src.utils.image_processing import random_crop_image_and_label, \
     random_flip_left_right_image_and_label, resize_image_and_label
-from sss.utils.losses import cross_entropy
+from src.utils.losses import cross_entropy
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     # Data part should live in cpu.
     with tf.device('/cpu:0'):
-        # Read from tfrecord format data made by sss.data.tfrecord.TFRecordWriter.
+        # Read from tfrecord format data made by src.data.tfrecord.TFRecordWriter.
         train_dataset = read_tfrecord(
             os.path.join(options['tfdata_dir'], 'train_*.tfrecord'))
         train_data_processor = DataPreprocessor(
@@ -90,7 +90,8 @@ if __name__ == '__main__':
                 resize_image_and_label,
                 size=tf.constant((options['train_resized_height'],
                                   options['train_resized_width'])))
-        if options['random_saturation'] > 0. and options['random_saturation'] < 1.:
+        if options['random_saturation'] > 0. and options[
+                'random_saturation'] < 1.:
             logging.info('Randomly adjust saturation by factor {}'.format(
                 options['random_saturation']))
             lower = 1. - options['random_saturation']
@@ -109,7 +110,8 @@ if __name__ == '__main__':
                 options['random_hue']))
             train_data_processor.process_image(
                 tf.image.random_hue, max_delta=options['random_hue'])
-        if options['random_brightness'] > 0. and options['random_brightness'] < 1.:
+        if options['random_brightness'] > 0. and options[
+                'random_brightness'] < 1.:
             logging.info('Randomly adjust brightness by factor {}'.format(
                 options['random_brightness']))
             train_data_processor.process_image(

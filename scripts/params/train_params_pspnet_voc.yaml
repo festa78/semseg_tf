@@ -55,7 +55,7 @@ finetune_from: ""
 # The parameter for tf.data.Dataset.shuffle().
 shuffle_buffer_size: 100
 # Path to the cityscapes tfrecord data directory.
-# The data should be created by sss.data.tfrecord.write_tfrecord.
+# The data should be created by src.data.tfrecord.write_tfrecord.
 tfdata_dir: "/home/ubuntu/workspace/local_data/voc/VOCdevkit/VOC2012/tfrecord"
 # The 21 classes trainId class weights to use for weighted
 # train cross entropy, loss, and iou computation.

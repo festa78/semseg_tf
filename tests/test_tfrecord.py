@@ -9,8 +9,8 @@ import tensorflow as tf
 
 import project_root
 
-from sss.data.tfrecord import read_tfrecord, write_tfrecord
-from sss.data.cityscapes import get_file_path
+from src.data.tfrecord import read_tfrecord, write_tfrecord
+from src.data.cityscapes import get_file_path
 
 IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
 

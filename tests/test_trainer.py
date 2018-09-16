@@ -1,10 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
-from sss.data.cityscapes import trainid2color_tensor
-from sss.models.fcn import fcn32
-from sss.pipelines.trainer import Trainer
-from sss.utils.losses import cross_entropy
+from src.data.cityscapes import trainid2color_tensor
+from src.models.fcn import fcn32
+from src.pipelines.trainer import Trainer
+from src.utils.losses import cross_entropy
 
 
 def _setup_trainer(tmpdir):
@@ -128,8 +128,8 @@ def test_compute_metrics(tmpdir):
             ))
 
             # After update.
-            np.testing.assert_almost_equal(train_mloss, 1027812.875)
-            np.testing.assert_almost_equal(train_miou, 0.02145448)
+            np.testing.assert_almost_equal(train_mloss, 1314190.0)
+            np.testing.assert_almost_equal(train_miou, 0.0017259248)
 
 
 def test_compute_class_weights(tmpdir):

@@ -5,7 +5,7 @@ logging.basicConfig(level=logging.INFO)
 import numpy as np
 import tensorflow as tf
 
-from sss.models.common import Common
+from src.models.common import Common
 
 
 class PSPNet(Common):

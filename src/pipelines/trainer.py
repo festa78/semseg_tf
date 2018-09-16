@@ -43,7 +43,7 @@ class Trainer:
     color_map_fn: functional
         A functional which can convert a class id to
         a corresponding rgb color.
-        E.g. sss.data.cityscapes.trainid2color_tensor.
+        E.g. src.data.cityscapes.trainid2color_tensor.
     save_dir: str
         A path to the directory to save logs and models.
     train_class_weights: 1d tf.Tensor, default None

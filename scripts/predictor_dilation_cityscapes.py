@@ -14,12 +14,12 @@ import yaml
 
 import project_root
 
-from sss.data.cityscapes import id2trainid_tensor, trainid2color_tensor
-from sss.data.data_preprocessor import DataPreprocessor
-from sss.data.tfrecord import read_tfrecord
-from sss.models.dilation_net import dilation7, dilation8, dilation10
-from sss.pipelines.predictor import Predictor
-from sss.utils.image_processing import resize_image_and_label
+from src.data.cityscapes import id2trainid_tensor, trainid2color_tensor
+from src.data.data_preprocessor import DataPreprocessor
+from src.data.tfrecord import read_tfrecord
+from src.models.dilation_net import dilation7, dilation8, dilation10
+from src.pipelines.predictor import Predictor
+from src.utils.image_processing import resize_image_and_label
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # Data part should live in cpu.
     with tf.device('/cpu:0'):
-        # Read from tfrecord format data made by sss.data.tfrecord.TFRecordWriter.
+        # Read from tfrecord format data made by src.data.tfrecord.TFRecordWriter.
         test_dataset = read_tfrecord(
             os.path.join(options['tfdata_dir'], 'test_*.tfrecord'))
         test_data_processor = DataPreprocessor(

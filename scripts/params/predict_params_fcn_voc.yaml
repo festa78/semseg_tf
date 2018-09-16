@@ -19,5 +19,5 @@ prefetch_buffer_size: 10
 # The prefix path to the ckpt files to load from.
 ckpt_path: "tmp/2018-08-04\ 23:55:10.251645/ckpts/00000014"
 # Path to the VOC2012 tfrecord data directory.
-# The data should be created by sss.data.tfrecord.write_tfrecord.
+# The data should be created by src.data.tfrecord.write_tfrecord.
 tfdata_dir: "/home/ubuntu/workspace/local_data/voc/VOCdevkit/VOC2012/tfrecord"

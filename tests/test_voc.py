@@ -1,11 +1,11 @@
-"""Test set for cityscapes classes.
+"""Test set for voc classes.
 """
 
 from PIL import Image
 import numpy as np
 import tensorflow as tf
 
-from sss.data.voc import get_file_path, id2trainid_tensor, trainid2color_tensor
+from src.data.voc import get_file_path, id2trainid_tensor, trainid2color_tensor
 
 TRAIN_FILENAMES = ['train1', 'train2', 'train3']
 VAL_FILENAMES = ['val', 'val2']
@@ -51,10 +51,10 @@ def _create_sample_voc_structure(tmpdir):
         train_image_list.append(image_path)
         train_label_list.append(label_path)
 
-        data_list['train'] = {
-            'image_list': train_image_list,
-            'label_list': train_label_list
-        }
+    data_list['train'] = {
+        'image_list': train_image_list,
+        'label_list': train_label_list
+    }
 
     val_image_list = []
     val_label_list = []
@@ -75,10 +75,10 @@ def _create_sample_voc_structure(tmpdir):
         val_image_list.append(image_path)
         val_label_list.append(label_path)
 
-        data_list['val'] = {
-            'image_list': val_image_list,
-            'label_list': val_label_list
-        }
+    data_list['val'] = {
+        'image_list': val_image_list,
+        'label_list': val_label_list
+    }
 
     root_dir_path = tmpdir.join()
     return root_dir_path, data_list

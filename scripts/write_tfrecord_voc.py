@@ -6,8 +6,8 @@ import argparse
 
 import project_root
 
-from sss.data.voc import get_file_path
-from sss.data.tfrecord import write_tfrecord
+from src.data.voc import get_file_path
+from src.data.tfrecord import write_tfrecord
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

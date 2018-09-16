@@ -6,8 +6,8 @@ import argparse
 
 import project_root
 
-from sss.data.cityscapes import get_cityscapes_file_path
-from sss.data.tfrecord import write_tfrecord
+from src.data.cityscapes import get_cityscapes_file_path
+from src.data.tfrecord import write_tfrecord
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 
-from sss.data.cityscapes import get_file_path, id2trainid_tensor, trainid2color_tensor
+from src.data.cityscapes import get_file_path, id2trainid_tensor, trainid2color_tensor
 
 
 def _create_sample_cityscapes_structure(tmpdir):
