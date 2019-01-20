@@ -12,18 +12,21 @@ from src.models.psp_net import pspnet50, pspnet101
 from src.utils.losses import cross_entropy
 
 
-def test_network_update():
-    """Test networks surely updates the parameters.
-    cf. https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765
-    """
-    IMAGE_SIZE = 224
-    NUM_CLASSES = 5
-    MODELS = (fcn32, fcn16, fcn8, frontend, dilation7, dilation8, dilation10, pspnet50, pspnet101)
-    np.random.seed(1234)
-    tf.set_random_seed(1234)
+class Test(tf.test.TestCase):
 
-    for model in MODELS:
-        with tf.Graph().as_default():
+    def test_network_update(self):
+        """Test networks surely updates the parameters.
+        cf. https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765
+        """
+        IMAGE_SIZE = 224
+        NUM_CLASSES = 5
+        LEARNING_RATE = .1
+        MODELS = (fcn32, fcn16, fcn8, frontend, dilation7, dilation8,
+                  dilation10, pspnet50, pspnet101)
+        np.random.seed(1234)
+        tf.set_random_seed(1234)
+
+        for model in MODELS:
             with tf.device("/cpu:0"):
                 dummy_in = tf.placeholder(tf.float32,
                                           (None, IMAGE_SIZE, IMAGE_SIZE, 3))
@@ -38,16 +41,15 @@ def test_network_update():
                 loss = cross_entropy(dummy_gt, out, 1.)
 
             with tf.device("/gpu:0"):
-                # Use large learning rate to avoid vanishing gradient (especially for PSPNet).
                 optimizer = tf.train.GradientDescentOptimizer(
-                    learning_rate=1.e40)
+                    learning_rate=LEARNING_RATE)
                 grads = optimizer.compute_gradients(
                     loss, var_list=tf.trainable_variables())
                 train_op = optimizer.apply_gradients(grads)
 
-            with tf.Session() as sess:
+            with self.test_session() as sess:
                 sess.run(tf.global_variables_initializer())
-                before = sess.run(tf.trainable_variables())
+                before = sess.run(tf.trainable_variables(scope='model'))
                 sess.run(
                     train_op,
                     feed_dict={
@@ -57,8 +59,7 @@ def test_network_update():
                         np.random.randint(
                             NUM_CLASSES, size=(1, IMAGE_SIZE, IMAGE_SIZE, 1)),
                     })
-                after = sess.run(tf.trainable_variables())
+                after = sess.run(tf.trainable_variables(scope='model'))
                 for i, (b, a) in enumerate(zip(before, after)):
                     # Make sure something changed.
-                    # assert (b != a).any()
-                    assert not np.allclose(b, a)
+                    self.assertTrue((b != a).any())

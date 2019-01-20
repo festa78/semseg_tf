@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from src.data.cityscapes import trainid2color_tensor
@@ -77,70 +78,74 @@ def _setup_trainer(tmpdir):
     return dut
 
 
-def test_trainer_update(tmpdir):
-    """Test Trainer class surely updates the parameters.
-    cf. https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765
-    """
-    with tf.Graph().as_default():
-        tf.set_random_seed(1234)
-        dut = _setup_trainer(tmpdir)
+class Test(tf.test.TestCase):
 
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            before = sess.run(tf.trainable_variables(scope='model'))
+    @pytest.fixture(autouse=True)
+    def setup(self, tmpdir):
+        self.tmpdir = tmpdir
 
-            dut.train(sess)
+    def test_trainer_update(self):
+        """Test Trainer class surely updates the parameters.
+        cf. https://medium.com/@keeper6928/how-to-unit-test-machine-learning-code-57cf6fd81765
+        """
+        with tf.Graph().as_default():
+            tf.set_random_seed(1234)
+            dut = _setup_trainer(self.tmpdir)
 
-            after = sess.run(tf.trainable_variables(scope='model'))
+            with self.test_session() as sess:
+                sess.run(tf.global_variables_initializer())
+                before = sess.run(tf.trainable_variables(scope='model'))
 
-    for b, a in zip(before, after):
-        # Make sure something changed.
-        assert (b != a).any()
+                dut.train(sess)
 
+                after = sess.run(tf.trainable_variables(scope='model'))
 
-def test_compute_metrics(tmpdir):
-    """Test Trainer class surely compute mean loss and IoU.
-    """
-    with tf.Graph().as_default():
-        tf.set_random_seed(1234)
-        dut = _setup_trainer(tmpdir)
+        for b, a in zip(before, after):
+            # Make sure something changed.
+            assert (b != a).any()
 
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            sess.run((dut.train_iterator.initializer,
-                      dut.train_metric_reset_op))
+    def test_compute_metrics(self):
+        """Test Trainer class surely compute mean loss and IoU.
+        """
+        with tf.Graph().as_default():
+            tf.set_random_seed(1234)
+            dut = _setup_trainer(self.tmpdir)
 
-            train_mloss, train_miou, _ = sess.run(
-                (dut.train_mean_loss, dut.train_mean_iou,
-                 dut.train_epoch_summary_op))
+            with self.test_session() as sess:
+                sess.run(tf.global_variables_initializer())
+                sess.run((dut.train_iterator.initializer,
+                          dut.train_metric_reset_op))
 
-            # Without update, it should be zero.
-            assert train_mloss == 0.
-            assert train_miou == 0.
+                train_mloss, train_miou, _ = sess.run(
+                    (dut.train_mean_loss, dut.train_mean_iou,
+                     dut.train_epoch_summary_op))
 
-            step_op = (dut.train_mean_loss_update_op,
-                       dut.train_mean_iou_update_op, dut.train_op)
-            out = sess.run(step_op)
+                # Without update, it should be zero.
+                assert train_mloss == 0.
+                assert train_miou == 0.
 
-            train_mloss, train_miou = sess.run((
-                dut.train_mean_loss,
-                dut.train_mean_iou,
-            ))
+                step_op = (dut.train_mean_loss_update_op,
+                           dut.train_mean_iou_update_op, dut.train_op)
+                out = sess.run(step_op)
 
-            # After update.
-            np.testing.assert_almost_equal(train_mloss, 1314190.0)
-            np.testing.assert_almost_equal(train_miou, 0.0017259248)
+                train_mloss, train_miou = sess.run((
+                    dut.train_mean_loss,
+                    dut.train_mean_iou,
+                ))
 
+                # After update.
+                np.testing.assert_almost_equal(train_mloss, 1314190.0)
+                np.testing.assert_almost_equal(train_miou, 0.0017259248)
 
-def test_compute_class_weights(tmpdir):
-    """Test Trainer class surely compute class weights.
-    """
-    with tf.Graph().as_default():
-        tf.set_random_seed(1234)
-        dut = _setup_trainer(tmpdir)
+    def test_compute_class_weights(self):
+        """Test Trainer class surely compute class weights.
+        """
+        with tf.Graph().as_default():
+            tf.set_random_seed(1234)
+            dut = _setup_trainer(self.tmpdir)
 
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            sess.run(dut.train_iterator.initializer)
-            weights = sess.run(dut.train_class_weights)
-            assert np.allclose(weights, np.ones(weights.shape) * .3)
+            with self.test_session() as sess:
+                sess.run(tf.global_variables_initializer())
+                sess.run(dut.train_iterator.initializer)
+                weights = sess.run(dut.train_class_weights)
+                assert np.allclose(weights, np.ones(weights.shape) * .3)

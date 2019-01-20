@@ -4,6 +4,7 @@
 import os
 
 from PIL import Image
+import pytest
 import numpy as np
 import tensorflow as tf
 
@@ -67,41 +68,47 @@ def _create_sample_cityscapes_structure(tmpdir):
     return root_dir_path, data_list
 
 
-def test_write_read_tfrecord(tmpdir):
-    """Test it can write and read the tfrecord file correctly.
-    """
-    # Constants.
-    DATA_CATEGORY = ['train', 'val', 'test']
+class Test(tf.test.TestCase):
 
-    # Make a dummy tfrecord file.
-    # XXX use more simple structure.
-    input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
-    output_dir = input_dir
-    # Convert from py.path.local to str.
-    data_list = get_file_path(input_dir)
-    write_tfrecord(data_list, output_dir)
+    @pytest.fixture(autouse=True)
+    def setup(self, tmpdir):
+        self.tmpdir = tmpdir
 
-    # Read the created tfrecord file.
-    init_op = tf.group(tf.global_variables_initializer(),
-                       tf.local_variables_initializer())
-    for category in DATA_CATEGORY:
-        dataset = read_tfrecord(
-            os.path.join(output_dir, category + '_0000.tfrecord'))
-        next_element = dataset.make_one_shot_iterator().get_next()
-        with tf.Session() as sess:
-            # The op for initializing the variables.
-            sess.run(init_op)
-            i = 0
-            while True:
-                try:
-                    sample = sess.run(next_element)
-                    gt_image = np.array(
-                        Image.open(open(sample['filename'].decode(),
-                                        'rb')).convert('RGB'))
-                    assert np.array_equal(sample['image'], gt_image)
-                    assert sample['height'] == IMAGE_HEIGHT
-                    assert sample['width'] == IMAGE_WIDTH
-                    i += 1
-                except tf.errors.OutOfRangeError:
-                    assert i == 4
-                    break
+    def test_write_read_tfrecord(self):
+        """Test it can write and read the tfrecord file correctly.
+        """
+        # Constants.
+        DATA_CATEGORY = ['train', 'val', 'test']
+
+        # Make a dummy tfrecord file.
+        input_dir, gt_data_list = _create_sample_cityscapes_structure(
+            self.tmpdir)
+        output_dir = input_dir
+        # Convert from py.path.local to str.
+        data_list = get_file_path(input_dir)
+        write_tfrecord(data_list, output_dir)
+
+        # Read the created tfrecord file.
+        init_op = tf.group(tf.global_variables_initializer(),
+                           tf.local_variables_initializer())
+        for category in DATA_CATEGORY:
+            dataset = read_tfrecord(
+                os.path.join(output_dir, category + '_0000.tfrecord'))
+            next_element = dataset.make_one_shot_iterator().get_next()
+            with self.test_session() as sess:
+                # The op for initializing the variables.
+                sess.run(init_op)
+                i = 0
+                while True:
+                    try:
+                        sample = sess.run(next_element)
+                        gt_image = np.array(
+                            Image.open(open(sample['filename'].decode(),
+                                            'rb')).convert('RGB'))
+                        assert np.array_equal(sample['image'], gt_image)
+                        self.assertEqual(sample['height'], IMAGE_HEIGHT)
+                        self.assertEqual(sample['width'], IMAGE_WIDTH)
+                        i += 1
+                    except tf.errors.OutOfRangeError:
+                        assert i == 4
+                        break

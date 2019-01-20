@@ -171,9 +171,8 @@ def trainid2color_tensor(label):
     def func(x):
         x_shape = x.shape
         x_shape = [item for item in x_shape[:-1]] + [3]
-        return np.array(
-            [trainId2label[int(i)].color for i in np.nditer(x)],
-            dtype=np.float32).reshape(x_shape)
+        return np.array([trainId2label[int(i)].color for i in np.nditer(x)],
+                        dtype=np.float32).reshape(x_shape)
 
     label_color = tf.py_func(func=func, inp=[label], Tout=tf.float32)
 

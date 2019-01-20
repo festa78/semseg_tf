@@ -2,6 +2,7 @@
 """
 
 from PIL import Image
+import pytest
 import numpy as np
 import tensorflow as tf
 
@@ -61,51 +62,56 @@ def _create_sample_cityscapes_structure(tmpdir):
     return root_dir_path, data_list
 
 
-def test_get_file_path(tmpdir):
-    """Test it can get file paths from cityscapes like data structure.
-    """
-    input_dir, gt_data_list = _create_sample_cityscapes_structure(tmpdir)
-    output_dir = input_dir
-    data_list = get_file_path(input_dir)
-    for cat1, cat2 in zip(data_list.values(), gt_data_list.values()):
-        for list1, list2 in zip(cat1.values(), cat2.values()):
-            # Do not care about orders.
-            assert set(list1) == set(list2)
+class Test(tf.test.TestCase):
 
+    @pytest.fixture(autouse=True)
+    def setup(self, tmpdir):
+        self.tmpdir = tmpdir
 
-def test_id2trainid_tensor():
-    """Test it can correctly convert id to trainId.
-    """
-    IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
-    with tf.Graph().as_default():
-        id_tensor = tf.placeholder(tf.int64, (IMAGE_HEIGHT, IMAGE_WIDTH, 1))
-        trainid_tensor = id2trainid_tensor(id_tensor)
-        with tf.Session() as sess:
-            trainid = sess.run(
-                trainid_tensor,
-                feed_dict={
-                    id_tensor: np.ones((IMAGE_HEIGHT, IMAGE_WIDTH, 1)) * 8.
-                })
-        # Checks output size is correct.
-        assert trainid.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 1)
-        # Checks id is correctly converted to trainId.
-        assert trainid[0, 0, 0] == 1
+    def test_get_file_path(self):
+        """Test it can get file paths from cityscapes like data structure.
+        """
+        input_dir, gt_data_list = _create_sample_cityscapes_structure(
+            self.tmpdir)
+        output_dir = input_dir
+        data_list = get_file_path(input_dir)
+        for cat1, cat2 in zip(data_list.values(), gt_data_list.values()):
+            for list1, list2 in zip(cat1.values(), cat2.values()):
+                # Do not care about orders.
+                assert set(list1) == set(list2)
 
+    def test_id2trainid_tensor(self):
+        """Test it can correctly convert id to trainId.
+        """
+        IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
+        with tf.Graph().as_default():
+            id_tensor = tf.placeholder(tf.int64, (IMAGE_HEIGHT, IMAGE_WIDTH, 1))
+            trainid_tensor = id2trainid_tensor(id_tensor)
+            with self.test_session() as sess:
+                trainid = sess.run(
+                    trainid_tensor,
+                    feed_dict={
+                        id_tensor: np.ones((IMAGE_HEIGHT, IMAGE_WIDTH, 1)) * 8.
+                    })
+            # Checks output size is correct.
+            assert trainid.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 1)
+            # Checks id is correctly converted to trainId.
+            assert trainid[0, 0, 0] == 1
 
-def test_trainid2color_tensor():
-    """Test it can correctly convert trainId to color.
-    """
-    IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
-    with tf.Graph().as_default():
-        id_tensor = tf.placeholder(tf.int64, (IMAGE_HEIGHT, IMAGE_WIDTH, 1))
-        color_tensor = trainid2color_tensor(id_tensor)
-        with tf.Session() as sess:
-            color = sess.run(
-                color_tensor,
-                feed_dict={
-                    id_tensor: np.ones((IMAGE_HEIGHT, IMAGE_WIDTH, 1)) * 2.
-                })
-        # Checks output size is correct.
-        assert color.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 3)
-        # Checks trainId is correctly converted to color.
-        assert np.all(color[0, 0, :] == np.array((70, 70, 70)))
+    def test_trainid2color_tensor(self):
+        """Test it can correctly convert trainId to color.
+        """
+        IMAGE_WIDTH, IMAGE_HEIGHT = 100, 100
+        with tf.Graph().as_default():
+            id_tensor = tf.placeholder(tf.int64, (IMAGE_HEIGHT, IMAGE_WIDTH, 1))
+            color_tensor = trainid2color_tensor(id_tensor)
+            with self.test_session() as sess:
+                color = sess.run(
+                    color_tensor,
+                    feed_dict={
+                        id_tensor: np.ones((IMAGE_HEIGHT, IMAGE_WIDTH, 1)) * 2.
+                    })
+            # Checks output size is correct.
+            assert color.shape == (IMAGE_HEIGHT, IMAGE_WIDTH, 3)
+            # Checks trainId is correctly converted to color.
+            assert np.all(color[0, 0, :] == np.array((70, 70, 70)))
